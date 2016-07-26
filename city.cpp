@@ -27,8 +27,8 @@
 // possible hash functions, by using SIMD instructions, or by
 // compromising on hash quality.
 
-#include "config.h"
-#include <city.h>
+//#include "config.h"
+#include "city.h"
 
 #include <algorithm>
 #include <string.h>  // for memcpy and memset
@@ -89,7 +89,7 @@ static uint32 UNALIGNED_LOAD32(const char *p) {
 
 #else
 
-#include <byteswap.h>
+#include "byteswap.h"
 
 #endif
 
@@ -511,6 +511,37 @@ uint128 CityHash128(const char *s, size_t len) {
                           uint128(Fetch64(s), Fetch64(s + 8) + k0)) :
       CityHash128WithSeed(s, len, uint128(k0, k1));
 }
+
+
+inline uint64 CityHash64WithSeed(int64_t key, uint64_t seed)
+{
+  return CityHash64WithSeed((const char *)&key,8,seed);
+}
+
+int myhash(int64_t key, int i, int s)
+{
+  uint64_t  val0;
+  uint64_t  val1;
+  uint64_t   val;
+  int ss=s;
+
+  val0=CityHash64WithSeed(key,3015) % ss;
+  val1=CityHash64WithSeed(key,7793) % ss;
+  if (val1==val0) {
+    val1 = (val1 +1) % ss;
+  }
+  if (i==0) val=val0;
+  if (i==1) val=val1;
+  if (i>1)  val=CityHash64WithSeed(Rotate(key,i),2137*i) % ss;
+  //if (i==1) ss=s/2;
+  //val=std::hash<int>()(key+i);
+  //val=(_mm_crc32_u64(i*378551,key));
+  return (val %ss);
+}
+
+
+
+
 
 #ifdef __SSE4_2__
 #include <citycrc.h>

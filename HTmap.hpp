@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "city.h"
 #include <tuple>
 #include <iostream>
@@ -147,42 +148,6 @@ HTIterator<key_type,value_type> HTIterator<key_type,value_type>::operator++(int)
 /*
  * Constructor
  */
-
-
-inline uint64 CityHash64WithSeed(int64_t key, uint64_t seed)
-{
- return CityHash64WithSeed((const char *)&key,8,seed);
-}
-
-int myhash(int64_t key, int i, int s)
-{
-    uint64_t  val0;
-    uint64_t  val1;
-    uint64_t   val;
-    int ss=s;
-
-    val0=CityHash64WithSeed(key,3015) % ss;
-    val1=CityHash64WithSeed(key,7793) % ss;
-    if (val1==val0) {
-        val1 = (val1 +1) % ss;
-    }
-    if (i==0) val=val0;
-    if (i==1) val=val1;
-    if (i>1)  val=CityHash64WithSeed(rot(key,i),2137*i) % ss;
-    //if (i==1) ss=s/2;
-    //val=std::hash<int>()(key+i);
-    //val=(_mm_crc32_u64(i*378551,key));
-    return (val %ss);
-}
-
-
-
-//int myhash(const std::pair<int,int> s, int i, int m)
-//{
-//    unsigned int h1 = hashg(s.first,i,m);
-//    unsigned int h2 = hashg(s.second,i,m);
-//    return ((h1 ^ ( h2 << 1 )) % m);
-//}
 
 template <typename key_type, typename value_type>
 HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize,int t)

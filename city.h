@@ -109,6 +109,7 @@ inline uint64 Hash128to64(const uint128& x) {
   return b;
 }
 
-int hashg(int64_t key, int i, int s);
+static uint64 Rotate(uint64 val, int shift);
+int myhash(int64_t key, int i, int s);
 
 #endif  // CITY_HASH_H_

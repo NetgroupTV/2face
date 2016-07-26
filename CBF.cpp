@@ -43,7 +43,7 @@ bool CBF::insert(int64_t item)
        //printf("debug BF:input to insert: ");
         //for (int i=0; i<len;i++) printf("%02x ",in[i]);
         for(unsigned i=0; i<num_hash; i++) {
-		int index=hashg(item,i+2,num_buckets);
+		int index=myhash(item,i+2,num_buckets);
 		mem[index]++;
 	}
 	return 0;
@@ -63,7 +63,7 @@ bool CBF::del(int64_t item)
     //for (int i=0; i<len;i++) printf("%02x ",in[i]);
     //printf("\n");
     for(unsigned i=0; i<num_hash; i++) {
-        unsigned index=hashg(item,i+2,num_buckets);
+        unsigned index=myhash(item,i+2,num_buckets);
         mem[index]--;
     }
     return true;
@@ -78,7 +78,7 @@ bool CBF::check(int64_t item)
         //for (int i=0; i<len;i++) printf("%02x ",in[i]);
         //printf("\n");
         for(unsigned i=0; i<num_hash; i++){
-		index=hashg(item,i+2,num_buckets);
+		index=myhash(item,i+2,num_buckets);
 		//if (mem[index]==0)
                 //    printf("MISS!\n");
                 if (mem[index]==0) return false;

@@ -87,9 +87,13 @@ static uint32 UNALIGNED_LOAD32(const char *p) {
 #define bswap_64(x) bswap64(x)
 #endif
 
-#else
+#elif defined(_WIN32)
 
 #include "byteswap.h"
+
+#else
+
+#include <byteswap.h>
 
 #endif
 

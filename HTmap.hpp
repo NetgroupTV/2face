@@ -420,7 +420,7 @@ bool HTmap<key_type,value_type>::remove(key_type key) {
         for (int ii = 0;  ii <b;  ii++){
             int p = myhash(key,i,m);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
-                present_table[i][ii][p] = -1;
+                present_table[i][ii][p] = false;
                 num_item--;
                 return true;
             }

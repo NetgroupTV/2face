@@ -52,7 +52,7 @@ bool CBF::insert(int64_t item)
 /*
  * Delete
  */
-bool CBF::del(int64_t item)
+bool CBF::erase(int64_t item)
 {
     if (!CBF::check(item)) {
         printf("ERROR: try to remove an item (%ld) not present in the BF\n",item);

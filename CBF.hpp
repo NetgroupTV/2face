@@ -4,7 +4,7 @@
 #include <string.h>
 #include <list>
 #include <vector>
-#include <cstdint> // include this header for uint64_t
+//#include <cstdint> // include this header for uint64_t
 
 using namespace std;
 
@@ -20,7 +20,7 @@ using namespace std;
         virtual ~CBF();
 
         void clear();
-        bool del(int64_t item);
+        bool erase(int64_t item);
         bool insert(int64_t item);
         bool check(int64_t item);
         unsigned get_nzero() {return num_zeros;}

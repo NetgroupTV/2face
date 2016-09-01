@@ -1,5 +1,6 @@
 #include "utils.h"
 #include <tuple>
+#include <vector>
 #include <iostream>
 #include <cstdint> // include this header for uint64_t
 #include <cstring>
@@ -41,7 +42,8 @@ template <typename key_type, typename value_type> class HTmap {
                 const value_type operator[](key_type key) const  {return HTmap::query(key); }
                 value_type query(key_type key);
                 // return the value, the position (i,ii,p) and the number of accesses
-                tuple<value_type,int,int,int,int> fullquery(key_type key);
+                //tuple<value_type,int,int,int,int> fullquery(key_type key);
+                std::vector<int> fullquery(key_type key);
                 key_type  get_key(int i, int ii, int p);
                 int count(key_type key);
                 bool remove(key_type key);
@@ -440,10 +442,20 @@ value_type HTmap<key_type,value_type>::query(key_type key)
  * Full Query
  */
 template <typename key_type, typename value_type>
-tuple<value_type,int,int,int,int> HTmap<key_type,value_type>::fullquery(key_type key)
+vector<int> HTmap<key_type,value_type>::fullquery(key_type key)
 {
+    vector<int> v;
     int num_lookup=0;
-    if ((key==victim_key) && (victim_flag)) return std::make_tuple(victim_value,-1,-1,-1,0);
+    if ((key==victim_key) && (victim_flag)) 
+    {
+        v.push_back(victim_value); 
+        v.push_back(-1); 
+        v.push_back(-1); 
+        v.push_back(-1); 
+        v.push_back(0); 
+        //return std::make_tuple(victim_value,-1,-1,-1,0);
+        return v;
+    }
     for (int i = 0;  i <K;  i++) {
         for (int ii = 0;  ii <b;  ii++){
             num_lookup++;
@@ -451,11 +463,23 @@ tuple<value_type,int,int,int,int> HTmap<key_type,value_type>::fullquery(key_type
             //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
             //verprintf("result is: %d\n",table[p][jj]);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
-                return make_tuple(table[i][ii][p].second,i,ii,p,num_lookup);
+                    v.push_back(table[i][ii][p].second); 
+                    v.push_back(i); 
+                    v.push_back(ii); 
+                    v.push_back(p); 
+                    v.push_back(num_lookup); 
+                    //return make_tuple(table[i][ii][p].second,i,ii,p,num_lookup);
+                    return v;
             }
         }
     } 
-    return std::make_tuple(victim_value,-1,-1,-1,num_lookup);
+    v.push_back(victim_value); 
+    v.push_back(-1); 
+    v.push_back(-1); 
+    v.push_back(-1); 
+    v.push_back(num_lookup); 
+    //return std::make_tuple(victim_value,-1,-1,-1,num_lookup);
+    return v;
 }
 
 

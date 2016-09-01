@@ -12,6 +12,7 @@ CBF::CBF(int h, int m)
 	n=0;
         num_buckets=m;
 	num_hash=h;
+        CBF::clear();
 }
 
 /*

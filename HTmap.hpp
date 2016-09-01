@@ -1,5 +1,4 @@
 #include "utils.h"
-#include "city.h"
 #include <tuple>
 #include <iostream>
 #include <cstdint> // include this header for uint64_t
@@ -7,8 +6,8 @@
 
 using namespace std;
 
-int tot_movements=0;
-int verbose=0;
+//int tot_movements=0;
+//int verbose=0;
 
 template <typename key_type, typename value_type> class HTmap;  // forward declare
 template <typename key_type, typename value_type> class HTIterator; // forward declare
@@ -27,20 +26,23 @@ template <typename key_type, typename value_type> class HTmap {
 		value_type victim_value;
 
         public:
-                HTmap();
-                HTmap(int way, int buckets, int hsize);
+                //HTmap();
+                //HTmap(int way, int buckets, int hsize);
                 HTmap(int way, int buckets, int hsize,int t);
                 virtual ~HTmap();
                 void clear();
-                void expand();
+                //void expand();
                 bool insert(key_type key,value_type value);
-                //LHS operator[]
+                bool direct_insert(key_type key,value_type value,int i, int ii);
+
+    //LHS operator[]
                 value_type& operator[](key_type key);
                 //RHS operator[]
                 const value_type operator[](key_type key) const  {return HTmap::query(key); }
                 value_type query(key_type key);
                 // return the value, the position (i,ii,p) and the number of accesses
                 tuple<value_type,int,int,int,int> fullquery(key_type key);
+                key_type  get_key(int i, int ii, int p);
                 int count(key_type key);
                 bool remove(key_type key);
                 bool erase(key_type key) {return HTmap::remove(key);}
@@ -149,6 +151,47 @@ HTIterator<key_type,value_type> HTIterator<key_type,value_type>::operator++(int)
  * Constructor
  */
 
+
+//inline uint64 CityHash64WithSeed(int64_t key, uint64_t seed)
+//{
+// return CityHash64WithSeed((const char *)&key,8,seed);
+//}
+
+//int rot(int64_t key, int i)
+//{
+//    return (key << i)| (key) >>(64-i);
+//}
+
+/*int myhash(int64_t key, int i, int s)
+{
+    uint64_t  val0;
+    uint64_t  val1;
+    uint64_t   val;
+    int ss=s;
+
+    val0=CityHash64WithSeed(key,3015) % ss;
+    val1=CityHash64WithSeed(key,7793) % ss;
+    if (val1==val0) {
+        val1 = (val1 +1) % ss;
+    }
+    if (i==0) val=val0;
+    if (i==1) val=val1;
+    if (i>1)  val=CityHash64WithSeed(rot(key,i),2137*i) % ss;
+    //if (i==1) ss=s/2;
+    //val=std::hash<int>()(key+i);
+    //val=(_mm_crc32_u64(i*378551,key));
+    return (val %ss);
+}*/
+
+
+
+//int myhash(const std::pair<int,int> s, int i, int m)
+//{
+//    unsigned int h1 = hashg(s.first,i,m);
+//    unsigned int h2 = hashg(s.second,i,m);
+//    return ((h1 ^ ( h2 << 1 )) % m);
+//}
+
 template <typename key_type, typename value_type>
 HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize,int t)
 {
@@ -172,7 +215,7 @@ HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize,int t)
   clear();
 }
 
-template <typename key_type, typename value_type>
+/*template <typename key_type, typename value_type>
 HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize)
 {
     HTmap<key_type,value_type>::HTmap(way,buckets,hsize,1000);
@@ -184,7 +227,7 @@ HTmap<key_type,value_type>::HTmap()
 {
     HTmap<key_type,value_type>::HTmap(2,4,1024*1024,1000);
 }
-
+*/
 /*
  * Distructor
  */
@@ -318,6 +361,35 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
     return false;
 }
 
+/*
+ * Direct Insert
+ */
+template <typename key_type, typename value_type>
+bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int i, int ii)
+{
+    //return false if the key is in the victim cache
+    if ((key==victim_key) && (victim_flag)) {
+        printf("the key is in the victim cache\n");
+        exit(1);
+        return false;
+    }
+
+    int p = myhash(key,i,m);
+
+    //return false if the place is not free
+    if (present_table[i][ii][p]) {
+        printf("the place [%d][%d] is not free (key=%ld)\n",i,ii,table[i][ii][p].first);
+        exit(1);
+        return false;
+    }
+
+    present_table[i][ii][p] = true;
+    table[i][ii][p]={key,value};
+    num_item++;
+    return true;
+}
+
+
 //LHS operator[]
 template <typename key_type, typename value_type>
 value_type& HTmap<key_type,value_type>::operator[](key_type key) {
@@ -386,6 +458,19 @@ tuple<value_type,int,int,int,int> HTmap<key_type,value_type>::fullquery(key_type
     return std::make_tuple(victim_value,-1,-1,-1,num_lookup);
 }
 
+
+/*
+ * Get key from index
+ */
+template <typename key_type, typename value_type>
+key_type  HTmap<key_type,value_type>::get_key(int i, int ii, int p)
+{
+    if (present_table[i][ii][p])
+        return table[i][ii][p].first;
+    else
+        return victim_key;
+}
+
 /*
  * Count
  */
@@ -420,6 +505,7 @@ bool HTmap<key_type,value_type>::remove(key_type key) {
         for (int ii = 0;  ii <b;  ii++){
             int p = myhash(key,i,m);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
+                //printf("remove key %ld from [%d][%d]\n",key,i,ii);
                 present_table[i][ii][p] = false;
                 num_item--;
                 return true;

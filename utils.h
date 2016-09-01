@@ -7,5 +7,6 @@
 #include "citycrc.h"
 #endif
 
-#define verprintf(...) if (verbose > 0)  {printf("In file %s, function %s(), line %d: ",__FILE__,__FUNCTION__,__LINE__); printf(__VA_ARGS__);}
+//#define verprintf(...) if (verbose > 0)  {printf("In file %s, function %s(), line %d: ",__FILE__,__FUNCTION__,__LINE__); printf(__VA_ARGS__);}
+#define verprintf(...) {printf("In file %s, function %s(), line %d: ",__FILE__,__FUNCTION__,__LINE__); printf(__VA_ARGS__);}
 

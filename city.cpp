@@ -29,6 +29,7 @@
 
 //#include "config.h"
 #include "city.h"
+#include <cstdint> // include this header for uint64_t
 
 #include <algorithm>
 #include <string.h>  // for memcpy and memset

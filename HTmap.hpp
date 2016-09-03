@@ -163,6 +163,19 @@ HTIterator<key_type,value_type> HTIterator<key_type,value_type>::operator++(int)
 //{
 //    return (key << i)| (key) >>(64-i);
 //}
+template <typename T>  
+uint64 CityHash(T key, uint64_t seed) 
+{
+    char* k = reinterpret_cast<char*>(&key);
+    return CityHash64WithSeed(k,sizeof(key),seed);
+}
+
+template <typename T>  
+uint64 CityHash(std::string key, uint64_t seed) 
+{
+    return CityHash64WithSeed(key.c_str(),key.length(),seed);
+}
+
 
 /*int myhash(int64_t key, int i, int s)
 {
@@ -186,6 +199,24 @@ HTIterator<key_type,value_type> HTIterator<key_type,value_type>::operator++(int)
 }*/
 
 
+template <typename T> int myhash(T key, int i, int s) {
+    uint64_t  val0;
+    uint64_t  val1;
+    uint64_t   val;
+    int ss=s;
+
+    val0=CityHash<T>(key,3015) % ss;
+    val1=CityHash<T>(key,7793) % ss;
+    if (val1==val0) {
+        val1 = (val1 +1) % ss;
+    }
+    if (i==0) val=val0;
+    if (i==1) val=val1;
+    if (i>1)  val=CityHash<T>(key,2137+i) % ss;
+    return (val %ss);
+
+
+}
 
 //int myhash(const std::pair<int,int> s, int i, int m)
 //{
@@ -315,7 +346,7 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
         return true;
     }
     for (int i = 0;  i <K;  i++){
-        int p = myhash(key,i,m);
+        int p = myhash<key_type>(key,i,m);
         for (int ii = 0;  ii <b;  ii++)
             if ((present_table[i][ii][p]) && (table[i][ii][p].first== key)) {
                 table[i][ii][p].second=value;
@@ -333,7 +364,7 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
 
         // search for empty places
         for (int i = 0;  i <K;  i++){
-            int p = myhash(key,i,m);
+            int p = myhash<key_type>(key,i,m);
             for (int ii = 0;  ii <b;  ii++)
                 if (!present_table[i][ii][p]) {  //insert in an empty place
                     present_table[i][ii][p] = true;
@@ -346,7 +377,7 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
         // finally play the cuckoo;
         int j = rand() % K;
         int jj = rand() % b;
-        int p = myhash(key,j,m);
+        int p = myhash<key_type>(key,j,m);
         key_type new_key = table[j][jj][p].first;
         value_type new_value = table[j][jj][p].second;
         table[j][jj][p]={key,value};
@@ -376,11 +407,11 @@ bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int
         return false;
     }
 
-    int p = myhash(key,i,m);
+    int p = myhash<key_type>(key,i,m);
 
     //return false if the place is not free
     if (present_table[i][ii][p]) {
-        printf("the place [%d][%d] is not free (key=%ld)\n",i,ii,table[i][ii][p].first);
+        printf("the place [%d][%d] is not free \n",i,ii);
         exit(1);
         return false;
     }
@@ -407,7 +438,7 @@ value_type& HTmap<key_type,value_type>::operator[](key_type key) {
         return victim_value;
     }
     for (int i = 0;  i <K;  i++){
-        int p = myhash(key,i,m);
+        int p = myhash<key_type>(key,i,m);
         for (int ii = 0;  ii <b;  ii++)
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
                 return table[i][ii][p].second;
@@ -427,7 +458,7 @@ value_type HTmap<key_type,value_type>::query(key_type key)
     if ((key==victim_key) && (victim_flag)) return victim_value;
     for (int i = 0;  i <K;  i++) {
         for (int ii = 0;  ii <b;  ii++){
-            int p = myhash(key,i,m);
+            int p = myhash<key_type>(key,i,m);
             //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
             //verprintf("result is: %d\n",table[p][jj]);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
@@ -459,7 +490,7 @@ vector<int> HTmap<key_type,value_type>::fullquery(key_type key)
     for (int i = 0;  i <K;  i++) {
         for (int ii = 0;  ii <b;  ii++){
             num_lookup++;
-            int p = myhash(key,i,m);
+            int p = myhash<key_type>(key,i,m);
             //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
             //verprintf("result is: %d\n",table[p][jj]);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
@@ -508,7 +539,7 @@ int HTmap<key_type,value_type>::count(key_type key)
     verprintf("query item in HT \n");
     for (int i = 0;  i <K;  i++) {
         for (int ii = 0;  ii <b;  ii++){
-            int p = myhash(key,i,m);
+            int p = myhash<key_type>(key,i,m);
             verprintf("query item in table[%d][%d] for p=%d\n",i,ii,p);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
                 return 1;
@@ -527,7 +558,7 @@ bool HTmap<key_type,value_type>::remove(key_type key) {
     }
     for (int i = 0;  i <K;  i++)
         for (int ii = 0;  ii <b;  ii++){
-            int p = myhash(key,i,m);
+            int p = myhash<key_type>(key,i,m);
             if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
                 //printf("remove key %ld from [%d][%d]\n",key,i,ii);
                 present_table[i][ii][p] = false;

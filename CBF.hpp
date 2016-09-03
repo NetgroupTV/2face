@@ -8,7 +8,7 @@
 
 using namespace std;
 
-    class CBF {
+template <typename key_type> class CBF {
         unsigned char*  mem;        // CBF memory
         unsigned        num_buckets; // size of CBF memory
         unsigned        num_hash; // number of hashes
@@ -20,9 +20,9 @@ using namespace std;
         virtual ~CBF();
 
         void clear();
-        bool erase(int64_t item);
-        bool insert(int64_t item);
-        bool check(int64_t item);
+        bool erase(key_type item);
+        bool insert(key_type item);
+        bool check(key_type item);
         unsigned get_nzero() {return num_zeros;}
         void dump();
 

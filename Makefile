@@ -1,7 +1,7 @@
 
 py_cbf: 
 	        swig -c++  -python CBF.i
-		g++ -fPIC -c -I/usr/include/python2.7 CBF.cpp CBF_wrap.cxx city.cpp
+		g++ -std=c++11 -fPIC -c -I/usr/include/python2.7 CBF.cpp CBF_wrap.cxx city.cpp
 		g++ -shared -lpython2.7 *.o -o _cbf.so
 
 py_cuckoo: 

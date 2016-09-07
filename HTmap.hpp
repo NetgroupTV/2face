@@ -34,6 +34,7 @@ template <typename key_type, typename value_type> class HTmap {
                 void clear();
                 //void expand();
                 bool insert(key_type key,value_type value);
+                std::vector<int> fullinsert(key_type key,value_type value);
                 bool direct_insert(key_type key,value_type value,int i, int ii);
 
     //LHS operator[]
@@ -468,7 +469,90 @@ value_type HTmap<key_type,value_type>::query(key_type key)
     }
     return victim_value;
 }
+/*
+ * Full Insert
+ */
+template <typename key_type, typename value_type>
+vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value)
+{
+    vector<int> v;
+    int num_lookup=0;
+    //update value if exist
+    if ((key==victim_key) && (victim_flag)) {
+        victim_value=value;
+        v.push_back(victim_value); 
+        v.push_back(-1); 
+        v.push_back(-1); 
+        v.push_back(-1); 
+        v.push_back(0); 
+        return v;
+    }
+    for (int i = 0;  i <K;  i++){
+        int p = myhash<key_type>(key,i,m);
+        num_lookup++;
+        for (int ii = 0;  ii <b;  ii++)
+            if ((present_table[i][ii][p]) && (table[i][ii][p].first== key)) {
+                table[i][ii][p].second=value;
+                v.push_back(table[i][ii][p].second); 
+                v.push_back(i); 
+                v.push_back(ii); 
+                v.push_back(p); 
+                v.push_back(num_lookup); 
+                return v;
+            }
+    }
 
+    // check if we need to grow the map
+    //if(90*HTmap<key_type,value_type>::get_size()<100*HTmap<key_type,value_type>::get_nitem()) {
+    //    HTmap<key_type,value_type>::expand();
+    //}
+
+    // try cuckoo
+    for (int t = 0;  t <= tmax;  t++) {
+
+        // search for empty places
+        for (int i = 0;  i <K;  i++){
+            int p = myhash<key_type>(key,i,m);
+            num_lookup++;
+            for (int ii = 0;  ii <b;  ii++)
+                if (!present_table[i][ii][p]) {  //insert in an empty place
+                    present_table[i][ii][p] = true;
+                    table[i][ii][p]={key,value};
+                    num_item++;
+                    v.push_back(table[i][ii][p].second); 
+                    v.push_back(i); 
+                    v.push_back(ii); 
+                    v.push_back(p); 
+                    v.push_back(num_lookup); 
+                    return v;
+                }
+        }
+
+        // finally play the cuckoo;
+        int j = rand() % K;
+        int jj = rand() % b;
+        int p = myhash<key_type>(key,j,m);
+        key_type new_key = table[j][jj][p].first;
+        value_type new_value = table[j][jj][p].second;
+        table[j][jj][p]={key,value};
+        key=new_key;
+        value=new_value;
+    }
+    verprintf("insertion failed\n");
+    //if (verbose==1) cout << "key:<" << key.first <<","<< key.second <<">" <<endl;
+    //if (verbose==1) cout << "value: " << value <<endl;
+
+    victim_flag=true;
+    victim_key=key;
+    victim_value=value;
+    v.push_back(victim_value); 
+    v.push_back(-1); 
+    v.push_back(-1); 
+    v.push_back(-1); 
+    v.push_back(1000); 
+    return v;
+}
+ 
 /*
  * Full Query
  */

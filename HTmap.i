@@ -11,6 +11,7 @@
 
 int myhash(int64_t key, int i, int s);
 %include "HTmap.hpp"
-%template(HTcuckoo) HTmap<int,int>;
+%template(myhashstring) myhash<string>;
+%template(HTint) HTmap<int,int>;
 %template(HTstring) HTmap<string,int>;
 %template(IntVector) vector<int>;

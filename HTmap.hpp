@@ -35,8 +35,8 @@ template <typename key_type, typename value_type> class HTmap {
                 //void expand();
                 bool insert(key_type key,value_type value);
                 std::vector<int> fullinsert(key_type key,value_type value);
-                bool direct_insert(key_type key,value_type value,int i, int ii);
-                value_type direct_query(key_type key,int i);
+                bool direct_insert(key_type key,value_type value,int i, int ii, bool aa);
+                std::vector<int>  direct_query(key_type key,int i);
 
     //LHS operator[]
                 value_type& operator[](key_type key);
@@ -400,7 +400,7 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
  * Direct Insert
  */
 template <typename key_type, typename value_type>
-bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int i, int ii)
+bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int i, int ii, bool auto_bucket)
 {
     //return false if the key is in the victim cache
     if ((key==victim_key) && (victim_flag)) {
@@ -411,17 +411,29 @@ bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int
 
     int p = myhash<key_type>(key,i,m);
 
-    //return false if the place is not free
-    if (present_table[i][ii][p]) {
-        printf("the place [%d][%d] is not free \n",i,ii);
-        exit(1);
+
+    if (auto_bucket) {
+        //return false if the place is not free
+        if (present_table[i][ii][p]) {
+            printf("the place [%d][%d] is not free \n",i,ii);
+            return false;
+        }
+
+        present_table[i][ii][p] = true;
+        table[i][ii][p]={key,value};
+        num_item++;
+        return true;
+    }
+    else {
+        for (int jj = 0;  jj <b;  jj++) {
+            if ((present_table[i][jj][p]) && (table[i][jj][p].first== key)){
+                table[i][jj][p].second=value;
+                return true;
+            }
+        }
+        printf("item not present\n");
         return false;
     }
-
-    present_table[i][ii][p] = true;
-    table[i][ii][p]={key,value};
-    num_item++;
-    return true;
 }
 
 
@@ -458,18 +470,33 @@ value_type& HTmap<key_type,value_type>::operator[](key_type key) {
  */
 
 template <typename key_type, typename value_type>
-value_type HTmap<key_type,value_type>::direct_query(key_type key,int i)
+std::vector<int> HTmap<key_type,value_type>::direct_query(key_type key,int i)
 {
-    if ((key==victim_key) && (victim_flag)) return victim_value;
-        for (int ii = 0;  ii <b;  ii++){
-            int p = myhash<key_type>(key,i,m);
-            //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
-            //verprintf("result is: %d\n",table[p][jj]);
-            if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
-                return table[i][ii][p].second;
-            }
+    std::vector<int> v;
+    if ((key==victim_key) && (victim_flag)) {
+        v.push_back(1);
+        v.push_back(victim_value); 
+        return v;
+    }
+
+    for (int ii = 0;  ii <b;  ii++){
+        int p = myhash<key_type>(key,i,m);
+        //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
+        //verprintf("result is: %d\n",table[p][jj]);
+        //printf("query item in table[%d][%d] for p=%d\n",i,ii,p);
+        //std::cout << table[i][ii][p].first << std::endl;
+        //printf("result is: %d\n",table[i][ii][p].second);
+        if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
+            //printf("match\n");
+            v.push_back(1);
+            v.push_back(table[i][ii][p].second); 
+            return v;
         }
-    return victim_value;
+    }
+
+    v.push_back(0);
+    v.push_back(victim_value);
+    return v;
 }
 
 /*

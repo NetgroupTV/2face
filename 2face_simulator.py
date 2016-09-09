@@ -11,7 +11,6 @@ import json
 import operator
 
 
-
 cache_hash_idx = 100
 # simulatore che conta numero accessi a memoria esterna
 # al variare delle tracce di ingresso e al variare delle 
@@ -22,16 +21,15 @@ cache_hash_idx = 100
 # D: 2face
 
 
-class __cache:
-    self.mem = []
-    self.size = 0
-    self.read_count = 0
-    self.write_count = 0
-
+class Cache:
     def __init__(self, size):
+        self.mem = []
         self.size = size
+        self.read_count = 0
+        self.write_count = 0
+
         for i in range(0,size):
-            self.mem.append(None,0)
+            self.mem.append((None,0))
 
     def query(self, key):
         self.read_count += 1
@@ -56,21 +54,18 @@ class __cache:
 
 
 class memA:
-    self.HT = None
-    self.memory_access_count = 0
-
     def __init__(self, ht_size, number_of_hash_tables):
+        self.memory_access_count = 0
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.HT.clear()
-        print "type A FDB instantiated"
-    
+
     def count(self, key):
         if self.HT.count(key):
             ret = self.HT.fullquery(key)
             #ret is a vector of 5 integers
             #ret[0]=value; ret[1]=ht idx; ret[2]=bucket; ret[3]=line idx; ret[4]=num of mem access
             new_val = ret[0] + 1
-            self.HTinsert(key, new_val) 
+            self.HT.insert(key, new_val) 
             #assuming that when I read I also get the location address of the element in HT. Thus the value update counts 1
             self.memory_access_count += ret[4]+1 
             return new_val
@@ -83,15 +78,14 @@ class memA:
         self.memory_access_count = 0
         self.HT.clear()
 
+    def mem_report(self):
+        print "Number of memory accesses: " + str(self.memory_access_count)
 
 class memB:
-    self.HT = None
-    self.cache = None
-    self.memory_access_count = 0
-
     def __init__(self, ht_size, cache_size, number_of_hash_tables):
+        self.memory_access_count = 0
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
-        self.cache = __cache(cache_size) 
+        self.cache = Cache(cache_size) 
         self.HT.clear()
 
     def count(self, key):
@@ -137,25 +131,56 @@ class memB:
         self.memory_access_count = 0
         self.HT.clear()
 
+    def mem_report(self):
+        print "Number of memory accesses: " + str(self.memory_access_count)
+        print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
+
+class BFarray:
+    def __init__(self, bf_size, number_of_hash_tables):
+        self.mem = []
+        self.read_count = 0
+        self.write_count = 0
+        self.bf_size = bf_size
+        self.number_of_hash_tables = number_of_hash_tables
+
+        for j in range(bf_size):
+            row = []
+            for i in range(number_of_hash_tables):
+                obj = cbf.CBFstring(4, 32)
+                row.append(obj)
+            self.mem.append(row)
+
+    def query(self, key):
+        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
+        row = self.mem[h]
+        res = []
+        for i in range(self.number_of_hash_tables):
+            self.read_count += 1
+            bf_obj = row[i]
+            res.append(bf_obj.check(key))
+
+        return res
+
+    def insert(self, key, idx):
+        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
+        row = self.mem[h]
+        self.write_count += 1
+        row[idx].insert(key)
+
 
 class memC:
-    self.HT = None
-    self.BF = None 
-    self.memory_access_count = 0
-    self.bf_size =
 
     def __init__(self, ht_size, bf_size, number_of_hash_tables):
+        self.memory_access_count = 0
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
-        self.BFarray = __BFarray(bf_size, number_of_hash_tables)
+        self.BFarray = BFarray(bf_size, number_of_hash_tables)
         self.HT.clear()
-        self.bf_size = bf_size
 
     def count(self, key):
         #compute hash(key)
-        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
 
         #bf_ret = (a,b,c,di, ...., numb_of_ht) a=0 if not in first HT, 1 otherwise, etc.... 
-        bf_ret = self.BFarray.query(h, key) 
+        bf_ret = self.BFarray.query(key) 
 
         found = False
         for idx, val in enumerate(bf_ret):
@@ -163,15 +188,16 @@ class memC:
                 ht_ret = self.HT.direct_query(key, idx)
                 self.memory_access_count += 1
 
-                if ht_ret[0]:
+                if ht_ret[0]==1:
                     found = True
                     new_val = ht_ret[1]+1
-                    self.HT.direct_insert(key, idx, new_val)
+                    self.HT.direct_insert(key, new_val, idx, 0, False)
                     return new_val
 
         if not found:
             ht_ret = self.HT.fullinsert(key, 1)
-            self.memory_access_count += ret2[4]
+            self.memory_access_count += ht_ret[4]
+            self.BFarray.insert(key, ht_ret[1])
             return 1
 
 
@@ -180,31 +206,58 @@ class memC:
         self.HT.clear()
         self.BFarray.clear()
 
-    def memory_report(self): 
-        pass
-
-
+    def mem_report(self):
+        print "Number of memory accesses: " + str(self.memory_access_count)
+        print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
 input_traces = {   
-       "campus": "../campus.5.txt",
-#       "wand" : "../wand.5.txt",
-#       "caida": "../caida.5.2.txt",
+       "campus": "campus.5.txt",
+#       "wand" : "wand.5.txt",
+#       "caida": "caida.5.2.txt",
 }
 
 
+if len(sys.argv) != 3:
+    print "usage: 2face_simulator.py <cache_size> <ht_size>"
+    sys.exit()
 
+cache_size = int(sys.argv[1])
+ht_size = int(sys.argv[2])
+
+#BF_SIZE = CACHE_SIZE
+bf_size = cache_size
 
 for tname,tpath in input_traces.iteritems():
     print "opening %s in file %s"%(tname, tpath)
     f = open(tpath, "r")
     packets = {}
     count = {}
+    num_of_packets = 0
+
+    testA = memA(ht_size, 4)
+    testB = memB(ht_size, cache_size, 4)
+    testC = memC(ht_size, bf_size, 4)
 
     while True:
         l = f.readline()
         if not l:
             break
-        fields = l.split(" ")
+        fields = l.split("\n")[0].split(" ")
         k ="%s %s %s %s %s"%(fields[1], fields[2], fields[3], fields[4], fields[5])
+        num_of_packets += 1
 
-    
+        print k 
+        print testA.count(k)
+        print testB.count(k)
+        print testC.count(k)
+
+    print "Trace " + tname
+    print "Number of packets " + str(num_of_packets)
+    print "TestA report:"
+    print testA.mem_report()
+
+    print "TestB report:"
+    print testB.mem_report() 
+
+    print "TestC report:"
+    print testC.mem_report() 

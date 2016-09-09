@@ -34,7 +34,7 @@ class __cache:
             self.mem.append(None,0)
 
     def query(self, key):
-        self.access_count += 1
+        self.read_count += 1
         p = HTmap.myhashstring(key, cache_hash_idx, self.size)
         element = self.mem[p]
         if not element[0]:
@@ -59,8 +59,8 @@ class memA:
     self.HT = None
     self.memory_access_count = 0
 
-    def __init__(self, ht_size):
-        self.HT =  HTmap.HTstring(4, 2, ht_size, 1000)
+    def __init__(self, ht_size, number_of_hash_tables):
+        self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.HT.clear()
         print "type A FDB instantiated"
     
@@ -79,7 +79,7 @@ class memA:
             self.memory_access_count += ret[4]
             return 1
 
-    def clear(self)
+    def clear(self):
         self.memory_access_count = 0
         self.HT.clear()
 
@@ -89,12 +89,13 @@ class memB:
     self.cache = None
     self.memory_access_count = 0
 
-    def __init__(self, ht_sizei, cache_size):
-        self.HT =  HTmap.HTstring(4, 2, ht_size, 1000)
+    def __init__(self, ht_size, cache_size, number_of_hash_tables):
+        self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.cache = __cache(cache_size) 
         self.HT.clear()
 
     def count(self, key):
+        #check if key in cache
         cache_ret = self.cache.query(key)
         
         if cache_ret[0] == "miss":
@@ -132,9 +133,57 @@ class memB:
             self.cache.insert(key, new_val)
             return new_val
 
-    def clear(self)
+    def clear(self):
         self.memory_access_count = 0
         self.HT.clear()
+
+
+class memC:
+    self.HT = None
+    self.BF = None 
+    self.memory_access_count = 0
+    self.bf_size =
+
+    def __init__(self, ht_size, bf_size, number_of_hash_tables):
+        self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
+        self.BFarray = __BFarray(bf_size, number_of_hash_tables)
+        self.HT.clear()
+        self.bf_size = bf_size
+
+    def count(self, key):
+        #compute hash(key)
+        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
+
+        #bf_ret = (a,b,c,di, ...., numb_of_ht) a=0 if not in first HT, 1 otherwise, etc.... 
+        bf_ret = self.BFarray.query(h, key) 
+
+        found = False
+        for idx, val in enumerate(bf_ret):
+            if val:
+                ht_ret = self.HT.direct_query(key, idx)
+                self.memory_access_count += 1
+
+                if ht_ret[0]:
+                    found = True
+                    new_val = ht_ret[1]+1
+                    self.HT.direct_insert(key, idx, new_val)
+                    return new_val
+
+        if not found:
+            ht_ret = self.HT.fullinsert(key, 1)
+            self.memory_access_count += ret2[4]
+            return 1
+
+
+    def clear(self):
+        self.memory_access_count = 0
+        self.HT.clear()
+        self.BFarray.clear()
+
+    def memory_report(self): 
+        pass
+
+
 
 input_traces = {   
        "campus": "../campus.5.txt",

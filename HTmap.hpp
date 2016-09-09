@@ -36,6 +36,7 @@ template <typename key_type, typename value_type> class HTmap {
                 bool insert(key_type key,value_type value);
                 std::vector<int> fullinsert(key_type key,value_type value);
                 bool direct_insert(key_type key,value_type value,int i, int ii);
+                value_type direct_query(key_type key,int i);
 
     //LHS operator[]
                 value_type& operator[](key_type key);
@@ -447,6 +448,27 @@ value_type& HTmap<key_type,value_type>::operator[](key_type key) {
     }
     printf("ERROR in operator[]\n");
     exit(1);
+    return victim_value;
+}
+
+
+
+/*
+ * Direct Query
+ */
+
+template <typename key_type, typename value_type>
+value_type HTmap<key_type,value_type>::direct_query(key_type key,int i)
+{
+    if ((key==victim_key) && (victim_flag)) return victim_value;
+        for (int ii = 0;  ii <b;  ii++){
+            int p = myhash<key_type>(key,i,m);
+            //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
+            //verprintf("result is: %d\n",table[p][jj]);
+            if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
+                return table[i][ii][p].second;
+            }
+        }
     return victim_value;
 }
 

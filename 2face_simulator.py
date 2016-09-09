@@ -186,16 +186,23 @@ class memC:
         for idx, val in enumerate(bf_ret):
             if val:
                 ht_ret = self.HT.direct_query(key, idx)
+                test = self.HT.query(key)
                 self.memory_access_count += 1
 
                 if ht_ret[0]==1:
+                    print 'reciao'
                     found = True
                     new_val = ht_ret[1]+1
                     self.HT.direct_insert(key, new_val, idx, 0, False)
                     return new_val
 
         if not found:
+            print 'ciao'
             ht_ret = self.HT.fullinsert(key, 1)
+            if (ht_ret[4]==1000):
+                print "HT e piena"
+                print self.HT.get_size()
+                print self.HT.get_nitem()
             self.memory_access_count += ht_ret[4]
             self.BFarray.insert(key, ht_ret[1])
             return 1
@@ -211,6 +218,7 @@ class memC:
         print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
 input_traces = {   
+#       "test": "test.txt",
        "campus": "campus.5.txt",
 #       "wand" : "wand.5.txt",
 #       "caida": "caida.5.2.txt",
@@ -248,8 +256,15 @@ for tname,tpath in input_traces.iteritems():
 
         print k 
         print testA.count(k)
-        print testB.count(k)
-        print testC.count(k)
+        b=testB.count(k)
+        c=testC.count(k)
+        print b
+        print c
+        if (b!=c):
+            print "ERROR"
+            print testC.HT.get_size()
+            print testC.HT.get_nitem()
+            sys.exit()
 
     print "Trace " + tname
     print "Number of packets " + str(num_of_packets)

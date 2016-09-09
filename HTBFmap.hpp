@@ -10,10 +10,7 @@ using namespace std;
 //int tot_movements=0;
 //int verbose=0;
 
-template <typename key_type, typename value_type> class HTmap;  // forward declare
-template <typename key_type, typename value_type> class HTIterator; // forward declare
-
-template <typename key_type, typename value_type> class HTmap {
+template <typename key_type, typename value_type> class HTBFmap {
 		bool        ***present_table;    //  present flag memory
 		pair<key_type,value_type>  ***table;      // entries stored in the HT
 
@@ -27,21 +24,19 @@ template <typename key_type, typename value_type> class HTmap {
 		value_type victim_value;
 
         public:
-                //HTmap();
-                //HTmap(int way, int buckets, int hsize);
-                HTmap(int way, int buckets, int hsize,int t);
-                virtual ~HTmap();
+                //HTBFmap();
+                //HTBFmap(int way, int buckets, int hsize);
+                HTBFmap(int way, int buckets, int hsize,int t);
+                virtual ~HTBFmap();
                 void clear();
                 //void expand();
                 bool insert(key_type key,value_type value);
                 std::vector<int> fullinsert(key_type key,value_type value);
-                bool direct_insert(key_type key,value_type value,int i, int ii, bool aa);
-                std::vector<int>  direct_query(key_type key,int i);
 
-    //LHS operator[]
+                //LHS operator[]
                 value_type& operator[](key_type key);
                 //RHS operator[]
-                const value_type operator[](key_type key) const  {return HTmap::query(key); }
+                const value_type operator[](key_type key) const  {return HTBFmap::query(key); }
                 value_type query(key_type key);
                 // return the value, the position (i,ii,p) and the number of accesses
                 //tuple<value_type,int,int,int,int> fullquery(key_type key);
@@ -49,122 +44,17 @@ template <typename key_type, typename value_type> class HTmap {
                 key_type  get_key(int i, int ii, int p);
                 int count(key_type key);
                 bool remove(key_type key);
-                bool erase(key_type key) {return HTmap::remove(key);}
+                bool erase(key_type key) {return HTBFmap::remove(key);}
                 long unsigned int size() {return (long unsigned int) num_item;}
                 int get_nitem() {return num_item;}
                 int get_size() {return K*b*m;}
-
-
-       // iterators:
-       //http://web.stanford.edu/class/cs107l/handouts/04-Custom-Iterators.pdf
-       //http://www.cs.northwestern.edu/~riesbeck/programming/c++/stl-iterator-define.html
-
-       //use private data of HTIterator class
-       friend class HTIterator<key_type,value_type>;
-       typedef HTIterator<key_type,value_type> iterator;
-
-       iterator begin() {
-
-           if(get_nitem()==0) return iterator(*this,0,0,0);
-           int x=0;
-           int y=0;
-           int z=0;
-           while(!present_table[x][y][z]){
-               z++;
-               if (z==m)  {y++; z=0;}
-               if (y==b)  {x++; y=0; z=0;}
-               if (x==K)  {x=0; y=0; z=0;}
-           }
-           return iterator(*this,x,y,z);
-       }
-
-       iterator end() {
-           if(get_nitem()==0) return iterator(*this,0,0,0);
-           int x=K-1;
-           int y=b-1;
-           int z=m-1;
-           while(!present_table[x][y][z]){
-               z--;
-               if (z==-1) {y--; z=m-1;}
-               if (y==-1) {x--; y=b-1; z=m-1;}
-               if (x==-1) {x=K-1; y=b-1; z=m-1;}
-           }
-           return iterator(*this,x,y,z);
-       }
 };
-
-template <typename key_type, typename value_type>
-class HTIterator{
-       private:
-       HTmap<key_type,value_type> & myHT;
-       int x,y,z;
-
-       public:
-       HTIterator(HTmap<key_type,value_type> & _ht, int _x, int _y, int _z) //constructor
-           :myHT(_ht),x(_x),y(_y),z(_z) {}
-
-       ~HTIterator(){} //distructor
-       bool operator==(const HTIterator& other) const {
-           if ((x==other.x) && (y==other.y) && (z==other.z))
-               return true;
-            return false;
-       }
-       bool operator!=(const HTIterator& other) const {
-           if ((x==other.x) && (y==other.y) && (z==other.z))
-               return false;
-            return true;
-       }
-
-       pair<key_type,value_type> & operator*();
-       HTIterator & operator++();
-       HTIterator operator++(int);
-
-};
-
-template <typename key_type, typename value_type>
-pair<key_type,value_type>& HTIterator<key_type,value_type>::operator*()
-{
-return myHT.table[x][y][z];
-}
-
-template <typename key_type, typename value_type>
-HTIterator<key_type,value_type> & HTIterator<key_type,value_type>::operator++()
-{
-    if(myHT.get_nitem()==0) return *this;
-    do
-    {
-        z++;
-        if (z==myHT.m)  {y++; z=0;}
-        if (y==myHT.b)  {x++; y=0; z=0;}
-        if (x==myHT.K) {x=0; y=0; z=0;}
-    }
-    while(!myHT.present_table[x][y][z]);
-
-    return *this;
-}
-
-template <typename key_type, typename value_type>
-HTIterator<key_type,value_type> HTIterator<key_type,value_type>::operator++(int)
-{
-     HTIterator temp = *this ;
-     this++;
-     return temp;
-}
 
 /*
  * Constructor
  */
 
 
-//inline uint64 CityHash64WithSeed(int64_t key, uint64_t seed)
-//{
-// return CityHash64WithSeed((const char *)&key,8,seed);
-//}
-
-//int rot(int64_t key, int i)
-//{
-//    return (key << i)| (key) >>(64-i);
-//}
 template <typename T>  
 uint64 CityHash(T key, uint64_t seed) 
 {
@@ -177,28 +67,6 @@ uint64 CityHash(std::string key, uint64_t seed)
 {
     return CityHash64WithSeed(key.c_str(),key.length(),seed);
 }
-
-
-/*int myhash(int64_t key, int i, int s)
-{
-    uint64_t  val0;
-    uint64_t  val1;
-    uint64_t   val;
-    int ss=s;
-
-    val0=CityHash64WithSeed(key,3015) % ss;
-    val1=CityHash64WithSeed(key,7793) % ss;
-    if (val1==val0) {
-        val1 = (val1 +1) % ss;
-    }
-    if (i==0) val=val0;
-    if (i==1) val=val1;
-    if (i>1)  val=CityHash64WithSeed(rot(key,i),2137*i) % ss;
-    //if (i==1) ss=s/2;
-    //val=std::hash<int>()(key+i);
-    //val=(_mm_crc32_u64(i*378551,key));
-    return (val %ss);
-}*/
 
 
 template <typename T> int myhash(T key, int i, int s) {
@@ -220,15 +88,8 @@ template <typename T> int myhash(T key, int i, int s) {
 
 }
 
-//int myhash(const std::pair<int,int> s, int i, int m)
-//{
-//    unsigned int h1 = hashg(s.first,i,m);
-//    unsigned int h2 = hashg(s.second,i,m);
-//    return ((h1 ^ ( h2 << 1 )) % m);
-//}
-
 template <typename key_type, typename value_type>
-HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize,int t)
+HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t)
 {
   tmax=t;
   m = hsize; // size of memory
@@ -247,27 +108,19 @@ HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize,int t)
           table[i][ii]= new pair<key_type,value_type>[m];
       }
   }
+
+  // alloca un CBF array di dimensioni bf_size,way,num_hash
+  TBD
+
+
   clear();
 }
 
-/*template <typename key_type, typename value_type>
-HTmap<key_type,value_type>::HTmap(int way, int buckets, int hsize)
-{
-    HTmap<key_type,value_type>::HTmap(way,buckets,hsize,1000);
-}
-
-
-template <typename key_type, typename value_type>
-HTmap<key_type,value_type>::HTmap()
-{
-    HTmap<key_type,value_type>::HTmap(2,4,1024*1024,1000);
-}
-*/
 /*
  * Distructor
  */
 template <typename key_type, typename value_type>
-HTmap<key_type,value_type>::~HTmap()
+HTBFmap<key_type,value_type>::~HTBFmap()
 {
     for (int i = 0;  i <K;  i++){
         for (int ii = 0;  ii < b;  ii++){
@@ -279,6 +132,10 @@ HTmap<key_type,value_type>::~HTmap()
     }
     delete[] present_table;
     delete[] table;
+
+  // dealloca il CBF array
+  TBD
+
 }
 
 
@@ -287,7 +144,7 @@ HTmap<key_type,value_type>::~HTmap()
  */
 
 template <typename key_type, typename value_type>
-void HTmap<key_type,value_type>::clear()
+void HTBFmap<key_type,value_type>::clear()
 {
 	num_item=0;
         victim_flag=false;
@@ -297,50 +154,16 @@ void HTmap<key_type,value_type>::clear()
                 present_table[i][ii][iii]=false;
                 }
     }
+  // pulisce il CBF array
+  TBD
 }
 
-
-/*template <typename key_type, typename value_type>
-HTmap<key_type,value_type>::expand()
-{
-  printf("expand table\n");
-  //copy the content in a temp table
-  bool*** temp_present_table = new bool**[K];
-  pair<key_type,value_type>*** temp_table = new pair<key_type,value_type>**[K];
-  for (int i = 0;  i <K;  i++) {
-      temp_present_table[i] = new bool*[b];
-      temp_table[i]= new pair<key_type,value_type>*[b];
-      for (int ii = 0;  ii <b;  ii++){
-          temp_present_table[i][ii] = new bool[m];
-          temp_table[i][ii]= new pair<key_type,value_type>[m];
-          for (int iii = 0;  iii <m;  iii++){
-          temp_present_table[i][ii][iii] = present_table[i][ii][iii];
-          temp_table[i][ii][iii]= table[i][ii][iii];
-          }
-      }
-  }
-  //delete the old table
-  HTmap<key_type,value_type>::~HTmap();
-  //create a new table
-  HTmap<key_type,value_type>::HTmap(K,b,2*m);
-  clear();
-  //copy the content in the new table
-  for (int i = 0;  i <K;  i++) {
-      for (int ii = 0;  ii <b;  ii++){
-          for (int iii = 0;  iii <m;  iii++){
-          if (temp_present_table[i][ii][iii])
-          HTmap<key_type,value_type>::insert(temp_table[i][ii][iii]= table[i][ii][iii]);
-          }
-      }
-  }
-}
-*/
 
 /*
  * Insert
  */
 template <typename key_type, typename value_type>
-bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
+bool HTBFmap<key_type,value_type>::insert(key_type key,value_type value)
 {
     //update value if exist
     if ((key==victim_key) && (victim_flag)) {
@@ -356,11 +179,6 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
             }
     }
 
-    // check if we need to grow the map
-    //if(90*HTmap<key_type,value_type>::get_size()<100*HTmap<key_type,value_type>::get_nitem()) {
-    //    HTmap<key_type,value_type>::expand();
-    //}
-
     // try cuckoo
     for (int t = 0;  t <= tmax;  t++) {
 
@@ -372,6 +190,10 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
                     present_table[i][ii][p] = true;
                     table[i][ii][p]={key,value};
                     num_item++;
+                    
+                    //inserisci key nel CBF i
+                    TBD
+                    
                     return true;
                 }
         }
@@ -383,6 +205,12 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
         key_type new_key = table[j][jj][p].first;
         value_type new_value = table[j][jj][p].second;
         table[j][jj][p]={key,value};
+                    
+        //rimuovi new_key dal CBF j
+        TBD
+        //inserisci key in CBF j
+        TBD
+
         key=new_key;
         value=new_value;
     }
@@ -396,54 +224,13 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
     return false;
 }
 
-/*
- * Direct Insert
- */
-template <typename key_type, typename value_type>
-bool HTmap<key_type,value_type>::direct_insert(key_type key,value_type value,int i, int ii, bool auto_bucket)
-{
-    //return false if the key is in the victim cache
-    if ((key==victim_key) && (victim_flag)) {
-        printf("ERROR: the key is in the victim cache\n");
-        exit(1);
-        return false;
-    }
-
-    int p = myhash<key_type>(key,i,m);
-
-
-    if (auto_bucket) {
-        //return false if the place is not free
-        if (present_table[i][ii][p]) {
-            printf("ERROR: the place [%d][%d] is not free \n",i,ii);
-            return false;
-        }
-
-        present_table[i][ii][p] = true;
-        table[i][ii][p]={key,value};
-        num_item++;
-        return true;
-    }
-    else {
-        for (int jj = 0;  jj <b;  jj++) {
-            if ((present_table[i][jj][p]) && (table[i][jj][p].first== key)){
-                table[i][jj][p].second=value;
-                return true;
-            }
-        }
-        printf("ERROR:item not present\n");
-        return false;
-    }
-}
-
-
 //LHS operator[]
 template <typename key_type, typename value_type>
-value_type& HTmap<key_type,value_type>::operator[](key_type key) {
+value_type& HTBFmap<key_type,value_type>::operator[](key_type key) {
 
 
-    if (HTmap<key_type,value_type>::count(key)==0){ //insert if not exist
-        HTmap<key_type,value_type>::insert(key,victim_value);
+    if (HTBFmap<key_type,value_type>::count(key)==0){ //insert if not exist
+        HTBFmap<key_type,value_type>::insert(key,victim_value);
     }
 
     //update value
@@ -464,46 +251,11 @@ value_type& HTmap<key_type,value_type>::operator[](key_type key) {
 }
 
 
-
-/*
- * Direct Query
- */
-
-template <typename key_type, typename value_type>
-std::vector<int> HTmap<key_type,value_type>::direct_query(key_type key,int i)
-{
-    std::vector<int> v;
-    if ((key==victim_key) && (victim_flag)) {
-        v.push_back(1);
-        v.push_back(victim_value); 
-        return v;
-    }
-
-    for (int ii = 0;  ii <b;  ii++){
-        int p = myhash<key_type>(key,i,m);
-        //verprintf("query item in table[%d][%d] for p=%d and f=%d\n",p,jj,p,fingerprint);
-        //verprintf("result is: %d\n",table[p][jj]);
-        //printf("query item in table[%d][%d] for p=%d\n",i,ii,p);
-        //std::cout << table[i][ii][p].first << std::endl;
-        //printf("result is: %d\n",table[i][ii][p].second);
-        if ((present_table[i][ii][p]) &&  (table[i][ii][p].first== key)) {
-            //printf("match\n");
-            v.push_back(1);
-            v.push_back(table[i][ii][p].second); 
-            return v;
-        }
-    }
-
-    v.push_back(0);
-    v.push_back(victim_value);
-    return v;
-}
-
 /*
  * Query
  */
 template <typename key_type, typename value_type>
-value_type HTmap<key_type,value_type>::query(key_type key)
+value_type HTBFmap<key_type,value_type>::query(key_type key)
 {
     if ((key==victim_key) && (victim_flag)) return victim_value;
     for (int i = 0;  i <K;  i++) {
@@ -522,7 +274,7 @@ value_type HTmap<key_type,value_type>::query(key_type key)
  * Full Insert
  */
 template <typename key_type, typename value_type>
-vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value)
+vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type value)
 {
     vector<int> v;
     int num_lookup=0;
@@ -552,8 +304,8 @@ vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value
     }
 
     // check if we need to grow the map
-    //if(90*HTmap<key_type,value_type>::get_size()<100*HTmap<key_type,value_type>::get_nitem()) {
-    //    HTmap<key_type,value_type>::expand();
+    //if(90*HTBFmap<key_type,value_type>::get_size()<100*HTBFmap<key_type,value_type>::get_nitem()) {
+    //    HTBFmap<key_type,value_type>::expand();
     //}
 
     // try cuckoo
@@ -573,6 +325,10 @@ vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value
                     v.push_back(ii); 
                     v.push_back(p); 
                     v.push_back(num_lookup); 
+                    
+                    //inserisci key nel CBF i
+                    TBD
+                    
                     return v;
                 }
         }
@@ -584,6 +340,12 @@ vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value
         key_type new_key = table[j][jj][p].first;
         value_type new_value = table[j][jj][p].second;
         table[j][jj][p]={key,value};
+                    
+        //rimuovi new_key dal CBF j
+        TBD
+        //inserisci key in CBF j
+        TBD
+
         key=new_key;
         value=new_value;
     }
@@ -607,7 +369,7 @@ vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value
  * Full Query
  */
 template <typename key_type, typename value_type>
-vector<int> HTmap<key_type,value_type>::fullquery(key_type key)
+vector<int> HTBFmap<key_type,value_type>::fullquery(key_type key)
 {
     vector<int> v;
     int num_lookup=0;
@@ -622,6 +384,10 @@ vector<int> HTmap<key_type,value_type>::fullquery(key_type key)
         return v;
     }
     for (int i = 0;  i <K;  i++) {
+                    
+        //se CBF(key) == 0 continue
+        TBD
+        
         num_lookup++;
         for (int ii = 0;  ii <b;  ii++){
             int p = myhash<key_type>(key,i,m);
@@ -652,7 +418,7 @@ vector<int> HTmap<key_type,value_type>::fullquery(key_type key)
  * Get key from index
  */
 template <typename key_type, typename value_type>
-key_type  HTmap<key_type,value_type>::get_key(int i, int ii, int p)
+key_type  HTBFmap<key_type,value_type>::get_key(int i, int ii, int p)
 {
     if (present_table[i][ii][p])
         return table[i][ii][p].first;
@@ -664,7 +430,7 @@ key_type  HTmap<key_type,value_type>::get_key(int i, int ii, int p)
  * Count
  */
 template <typename key_type, typename value_type>
-int HTmap<key_type,value_type>::count(key_type key)
+int HTBFmap<key_type,value_type>::count(key_type key)
 {
     if ((key==victim_key) && (victim_flag)) {
         verprintf("match item in victim cache \n");
@@ -685,7 +451,7 @@ int HTmap<key_type,value_type>::count(key_type key)
 
 
 template <typename key_type, typename value_type>
-bool HTmap<key_type,value_type>::remove(key_type key) {
+bool HTBFmap<key_type,value_type>::remove(key_type key) {
     if ((key==victim_key) && (victim_flag)){
             victim_flag=false;
             return true;

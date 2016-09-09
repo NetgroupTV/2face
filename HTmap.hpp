@@ -588,7 +588,7 @@ vector<int> HTmap<key_type,value_type>::fullinsert(key_type key,value_type value
         value=new_value;
     }
     verprintf("insertion failed\n");
-    printf("insertion failed\n");
+    printf("HTmap:: insertion failed\n");
     //if (verbose==1) cout << "key:<" << key.first <<","<< key.second <<">" <<endl;
     //if (verbose==1) cout << "value: " << value <<endl;
 

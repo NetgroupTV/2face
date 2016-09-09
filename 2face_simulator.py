@@ -66,12 +66,15 @@ class memA:
             #ret is a vector of 5 integers
             #ret[0]=value; ret[1]=ht idx; ret[2]=bucket; ret[3]=line idx; ret[4]=num of mem access
             new_val = ret[0] + 1
-            self.HT.insert(key, new_val) 
+            if (self.HT.insert(key, new_val)==False):
+                print 'HT full!!!'
             #assuming that when I read I also get the location address of the element in HT. Thus the value update counts 1
             self.memory_access_count += ret[4]+1 
             return new_val
         else:
             ret = self.HT.fullinsert(key, 1)
+            if (ret[4]==1000):
+                print 'HT full!!!'
             self.memory_access_count += ret[4]
             return 1
 
@@ -108,6 +111,8 @@ class memB:
         elif cache_ret[0] == "conflict":
             #insert old cache element in HT
             ret2 = self.HT.fullinsert(cache_ret[1], cache_ret[2])
+            if (ret2[4]==1000):
+                print 'HT full!!!'
             self.memory_access_count += ret2[4]
 
             #check if key in HT
@@ -189,6 +194,8 @@ class memC:
             return new_val
         else:
             ret = self.HT.fullinsert(key, 1)
+            if (ret[4]==1000):
+                print 'HT full!!!'
             self.memory_access_count += ret[4]
             return 1
 

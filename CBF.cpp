@@ -39,8 +39,31 @@ template <typename T> int myhash(T key, int i, int s) {
 }
 
 template <typename key_type>
+CBF<key_type>::CBF()
+{
+	//allocation of BF memory
+	mem = new unsigned char[32];
+	n=0;
+        num_buckets=32;
+	num_hash=4;
+        CBF::clear();
+}
+
+template <typename key_type>
 CBF<key_type>::CBF(int h, int m)
 {
+	//allocation of BF memory
+	mem = new unsigned char[m];
+	n=0;
+        num_buckets=m;
+	num_hash=h;
+        CBF::clear();
+}
+
+template <typename key_type>
+void CBF<key_type>::setsize(int h, int m)
+{
+	delete[] mem;
 	//allocation of BF memory
 	mem = new unsigned char[m];
 	n=0;

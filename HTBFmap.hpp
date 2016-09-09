@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "CBF.hpp"
 #include <tuple>
 #include <vector>
 #include <iostream>
@@ -14,7 +15,13 @@ template <typename key_type, typename value_type> class HTBFmap {
 		bool        ***present_table;    //  present flag memory
 		pair<key_type,value_type>  ***table;      // entries stored in the HT
 
-		int m;                         // size of a table
+        //CBF array[cbf_size][K]
+        CBF<key_type>** cbf_array;
+        int cbf_size;
+
+
+
+        int m;                         // size of a table
 		int b;     	               // number of slots in a bucket
 		int K;     	               // number of way
 		int num_item;                  // number of inserted item
@@ -26,7 +33,7 @@ template <typename key_type, typename value_type> class HTBFmap {
         public:
                 //HTBFmap();
                 //HTBFmap(int way, int buckets, int hsize);
-                HTBFmap(int way, int buckets, int hsize,int t);
+                HTBFmap(int way, int buckets, int hsize,int t, int bf_size);
                 virtual ~HTBFmap();
                 void clear();
                 //void expand();
@@ -89,12 +96,13 @@ template <typename T> int myhash(T key, int i, int s) {
 }
 
 template <typename key_type, typename value_type>
-HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t)
+HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t, int bf_size)
 {
   tmax=t;
   m = hsize; // size of memory
   b = buckets;
   K = way;
+  cbf_size=bf_size;
   num_item=0;   	// number of inserted item
 
   //allocation of HT memory Kxbxm
@@ -110,9 +118,14 @@ HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t)
   }
 
   // alloca un CBF array di dimensioni bf_size,way,num_hash
-  TBD
-
-
+  cbf_array = new CBF<key_type>*[K];
+  for (int i = 0;  i <K;  i++) {
+      cbf_array[i] = new CBF<key_type>[bf_size];
+      for (int ii = 0;  ii <bf_size;  ii++) {
+          cbf_array[i][ii].setsize(4,32);
+      }
+  }
+  printf("ciao\n");
   clear();
 }
 
@@ -134,8 +147,13 @@ HTBFmap<key_type,value_type>::~HTBFmap()
     delete[] table;
 
   // dealloca il CBF array
-  TBD
-
+    for (int i = 0;  i <K;  i++) {
+        for (int ii = 0;  i <cbf_size;  ii++) {
+            //~cbf_array[i][ii];
+        }
+        delete[] cbf_array[i];
+    }
+    delete[] cbf_array;
 }
 
 
@@ -155,7 +173,12 @@ void HTBFmap<key_type,value_type>::clear()
                 }
     }
   // pulisce il CBF array
-  TBD
+    // dealloca il CBF array
+    for (int i = 0;  i <K;  i++) {
+        for (int ii = 0;  ii <cbf_size;  ii++) {
+            cbf_array[i][ii].clear();
+        }
+    }
 }
 
 
@@ -190,10 +213,9 @@ bool HTBFmap<key_type,value_type>::insert(key_type key,value_type value)
                     present_table[i][ii][p] = true;
                     table[i][ii][p]={key,value};
                     num_item++;
-                    
-                    //inserisci key nel CBF i
-                    TBD
-                    
+                    //inserisci key nel CBF i in posizione z=hash(key,100)
+                    int z=myhash<key_type>(key,100,cbf_size);
+                    cbf_array[i][z].insert(key);
                     return true;
                 }
         }
@@ -207,9 +229,13 @@ bool HTBFmap<key_type,value_type>::insert(key_type key,value_type value)
         table[j][jj][p]={key,value};
                     
         //rimuovi new_key dal CBF j
-        TBD
+        int z=myhash<key_type>(new_key,100,cbf_size);
+        cbf_array[j][z].insert(new_key);
+
         //inserisci key in CBF j
-        TBD
+        z=myhash<key_type>(key,100,cbf_size);
+        cbf_array[j][z].insert(key);
+
 
         key=new_key;
         value=new_value;
@@ -303,11 +329,6 @@ vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type val
             }
     }
 
-    // check if we need to grow the map
-    //if(90*HTBFmap<key_type,value_type>::get_size()<100*HTBFmap<key_type,value_type>::get_nitem()) {
-    //    HTBFmap<key_type,value_type>::expand();
-    //}
-
     // try cuckoo
     for (int t = 0;  t <= tmax;  t++) {
 
@@ -327,7 +348,8 @@ vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type val
                     v.push_back(num_lookup); 
                     
                     //inserisci key nel CBF i
-                    TBD
+                    int z=myhash<key_type>(key,100,cbf_size);
+                    cbf_array[i][z].insert(key);
                     
                     return v;
                 }
@@ -340,11 +362,14 @@ vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type val
         key_type new_key = table[j][jj][p].first;
         value_type new_value = table[j][jj][p].second;
         table[j][jj][p]={key,value};
-                    
+
         //rimuovi new_key dal CBF j
-        TBD
+        int z=myhash<key_type>(new_key,100,cbf_size);
+        cbf_array[j][z].insert(new_key);
+
         //inserisci key in CBF j
-        TBD
+        z=myhash<key_type>(key,100,cbf_size);
+        cbf_array[j][z].insert(key);
 
         key=new_key;
         value=new_value;
@@ -383,11 +408,12 @@ vector<int> HTBFmap<key_type,value_type>::fullquery(key_type key)
         //return std::make_tuple(victim_value,-1,-1,-1,0);
         return v;
     }
+    int z=myhash<key_type>(key,100,cbf_size);
     for (int i = 0;  i <K;  i++) {
-                    
         //se CBF(key) == 0 continue
-        TBD
-        
+        if (cbf_array[i][z].check(key)==0) {
+            continue;
+        }
         num_lookup++;
         for (int ii = 0;  ii <b;  ii++){
             int p = myhash<key_type>(key,i,m);

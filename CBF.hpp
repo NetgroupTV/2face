@@ -16,9 +16,11 @@ template <typename key_type> class CBF {
         unsigned        num_zeros;  // number of zeroes in the filter
 
         public:
+        CBF();
         CBF(int h, int m);
         virtual ~CBF();
 
+        void setsize(int h, int m);
         void clear();
         bool erase(key_type item);
         bool insert(key_type item);

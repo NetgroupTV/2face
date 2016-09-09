@@ -2,6 +2,7 @@
 
 import cbf
 import HTmap
+import HTBFmap
 import sys
 import matplotlib
 matplotlib.use('Agg')
@@ -172,50 +173,60 @@ class memC:
 
     def __init__(self, ht_size, bf_size, number_of_hash_tables):
         self.memory_access_count = 0
-        self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
-        self.BFarray = BFarray(bf_size, number_of_hash_tables)
+        self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,bf_size)
+        #self.BFarray = BFarray(bf_size, number_of_hash_tables)
         self.HT.clear()
-
+    
     def count(self, key):
-        #compute hash(key)
-
-        #bf_ret = (a,b,c,di, ...., numb_of_ht) a=0 if not in first HT, 1 otherwise, etc.... 
-        bf_ret = self.BFarray.query(key) 
-
-        found = False
-        for idx, val in enumerate(bf_ret):
-            if val:
-                ht_ret = self.HT.direct_query(key, idx)
-                test = self.HT.query(key)
-                self.memory_access_count += 1
-
-                if ht_ret[0]==1:
-                    print 'reciao'
-                    found = True
-                    new_val = ht_ret[1]+1
-                    self.HT.direct_insert(key, new_val, idx, 0, False)
-                    return new_val
-
-        if not found:
-            print 'ciao'
-            ht_ret = self.HT.fullinsert(key, 1)
-            if (ht_ret[4]==1000):
-                print "HT e piena"
-                print self.HT.get_size()
-                print self.HT.get_nitem()
-            self.memory_access_count += ht_ret[4]
-            self.BFarray.insert(key, ht_ret[1])
+        if self.HT.count(key):
+            ret = self.HT.fullquery(key)
+            #ret is a vector of 5 integers
+            #ret[0]=value; ret[1]=ht idx; ret[2]=bucket; ret[3]=line idx; ret[4]=num of mem access
+            new_val = ret[0] + 1
+            self.HT.insert(key, new_val) 
+            #assuming that when I read I also get the location address of the element in HT. Thus the value update counts 1
+            self.memory_access_count += ret[4]+1 
+            return new_val
+        else:
+            ret = self.HT.fullinsert(key, 1)
+            self.memory_access_count += ret[4]
             return 1
+
+    #def count(self, key):
+    #    #compute hash(key)
+
+    #    #bf_ret = (a,b,c,di, ...., numb_of_ht) a=0 if not in first HT, 1 otherwise, etc.... 
+    #    bf_ret = self.BFarray.query(key) 
+
+    #    found = False
+    #    for idx, val in enumerate(bf_ret):
+    #        if val:
+    #            ht_ret = self.HT.direct_query(key, idx)
+    #            self.memory_access_count += 1
+
+    #            if ht_ret[0]==1:
+    #                print 'reciao'
+    #                found = True
+    #                new_val = ht_ret[1]+1
+    #                self.HT.direct_insert(key, new_val, idx, 0, False)
+    #                return new_val
+
+    #    if not found:
+    #        print 'ciao'
+    #        ht_ret = self.HT.fullinsert(key, 1)
+    #        self.memory_access_count += ht_ret[4]
+    #        #self.BFarray.insert(key, ht_ret[1])
+    #        return 1
 
 
     def clear(self):
         self.memory_access_count = 0
         self.HT.clear()
-        self.BFarray.clear()
+        #self.BFarray.clear()
 
     def mem_report(self):
         print "Number of memory accesses: " + str(self.memory_access_count)
-        print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
+        #print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
 input_traces = {   
 #       "test": "test.txt",

@@ -1,6 +1,6 @@
 /* HTBFmap.i */
 
-%module HTmap
+%module HTBFmap
 %{ 
     #define SWIG_FILE_WITH_INIT
     #include "HTBFmap.hpp"

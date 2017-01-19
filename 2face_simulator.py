@@ -57,6 +57,8 @@ class Cache:
 class memA:
     def __init__(self, ht_size, number_of_hash_tables):
         self.memory_access_count = 0
+        self.memory_read_count = 0
+        self.number_of_hash_tables=number_of_hash_tables
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.HT.clear()
 
@@ -70,8 +72,10 @@ class memA:
                 print 'HT full!!!'
             #assuming that when I read I also get the location address of the element in HT. Thus the value update counts 1
             self.memory_access_count += ret[4]+1 
+            self.memory_read_count += ret[4]
             return new_val
         else:
+            self.memory_read_count +=self.number_of_hash_tables 
             ret = self.HT.fullinsert(key, 1)
             if (ret[4]==1000):
                 print 'HT full!!!'
@@ -83,11 +87,16 @@ class memA:
         self.HT.clear()
 
     def mem_report(self):
+        print "Number of items in HT: " + str(self.HT.get_nitem())
+        print "HT size: " + str(self.HT.get_size())
         print "Number of memory accesses: " + str(self.memory_access_count)
+        print "Number of read memory accesses: " + str(self.memory_read_count)
 
 class memB:
     def __init__(self, ht_size, cache_size, number_of_hash_tables):
         self.memory_access_count = 0
+        self.memory_read_count = 0
+        self.number_of_hash_tables=number_of_hash_tables
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.cache = Cache(cache_size) 
         self.HT.clear()
@@ -101,10 +110,12 @@ class memB:
             if self.HT.count(key):
                 ret = self.HT.fullquery(key)
                 self.memory_access_count += ret[4]
+                self.memory_read_count += ret[4]
                 new_val = ret[0]+1
                 self.cache.insert(key, new_val)
                 return new_val 
             else:
+                self.memory_read_count +=self.number_of_hash_tables 
                 self.cache.insert(key, 1)
                 return 1
 
@@ -120,6 +131,7 @@ class memB:
                 #YES -> move new element in cache
                 ht_ret = self.HT.fullquery(key)
                 self.memory_access_count += ht_ret[4]
+                self.memory_read_count += ht_ret[4]
                 new_val = ht_ret[0]+1
                 self.cache.insert(key, new_val)
                 return new_val
@@ -138,7 +150,10 @@ class memB:
         self.HT.clear()
 
     def mem_report(self):
+        print "Number of items in HT: " + str(self.HT.get_nitem())
+        print "HT size: " + str(self.HT.get_size())
         print "Number of memory accesses: " + str(self.memory_access_count)
+        print "Number of read memory accesses: " + str(self.memory_read_count)
         print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
 class BFarray:
@@ -178,6 +193,7 @@ class memC:
 
     def __init__(self, ht_size, bf_size, number_of_hash_tables):
         self.memory_access_count = 0
+        self.memory_read_count   = 0 
         self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,bf_size)
         #self.BFarray = BFarray(bf_size, number_of_hash_tables)
         self.HT.clear()
@@ -191,8 +207,13 @@ class memC:
             self.HT.insert(key, new_val) 
             #assuming that when I read I also get the location address of the element in HT. Thus the value update counts 1
             self.memory_access_count += ret[4]+1 
+            self.memory_read_count += ret[4]
             return new_val
         else:
+            #count read access not pruned by BFs
+            ret = self.HT.fullquery(key)
+            self.memory_read_count += ret[4]
+            
             ret = self.HT.fullinsert(key, 1)
             if (ret[4]==1000):
                 print 'HT full!!!'
@@ -232,13 +253,15 @@ class memC:
         #self.BFarray.clear()
 
     def mem_report(self):
+        #print "Number of items in HT: " + str(self.HTBF.get_nitem())
         print "Number of memory accesses: " + str(self.memory_access_count)
-        #print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
+        print "Number of read memory accesses: " + str(self.memory_read_count)
+#print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
 input_traces = {   
 #       "test": "test.txt",
-       "campus": "campus.5.txt",
-#       "wand" : "wand.5.txt",
+#       "campus": "campus.5.txt"
+       "wand" : "wand.5.txt"
 #       "caida": "caida.5.2.txt",
 }
 
@@ -272,25 +295,27 @@ for tname,tpath in input_traces.iteritems():
         k ="%s %s %s %s %s"%(fields[1], fields[2], fields[3], fields[4], fields[5])
         num_of_packets += 1
 
-        print k 
-        print testA.count(k)
+        #print k 
+        #print 
+        a=testA.count(k)
         b=testB.count(k)
         c=testC.count(k)
-        print b
-        print c
-        if (b!=c):
+        #print b
+        #print c
+        if ((a!=b) or (b!=c)):
             print "ERROR"
-            print testC.HT.get_size()
-            print testC.HT.get_nitem()
+            print "HT size is", testC.HT.get_size()
+            print "items in HT:", testC.HT.get_nitem()
             sys.exit()
 
     print "Trace " + tname
     print "Number of packets " + str(num_of_packets)
     print "TestA report:"
-    print testA.mem_report()
+    testA.mem_report()
 
     print "TestB report:"
-    print testB.mem_report() 
+    testB.mem_report() 
 
     print "TestC report:"
-    print testC.mem_report() 
+    testC.mem_report() 
+    sys.exit()

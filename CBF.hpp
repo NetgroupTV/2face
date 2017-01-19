@@ -18,7 +18,7 @@ template <typename key_type> class CBF {
         public:
         CBF();
         CBF(int h, int m);
-        virtual ~CBF();
+        ~CBF();
 
         void setsize(int h, int m);
         void clear();

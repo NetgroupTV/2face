@@ -30,7 +30,7 @@ template <typename key_type, typename value_type> class HTmap {
                 //HTmap();
                 //HTmap(int way, int buckets, int hsize);
                 HTmap(int way, int buckets, int hsize,int t);
-                virtual ~HTmap();
+                ~HTmap();
                 void clear();
                 //void expand();
                 bool insert(key_type key,value_type value);
@@ -38,7 +38,7 @@ template <typename key_type, typename value_type> class HTmap {
                 bool direct_insert(key_type key,value_type value,int i, int ii, bool aa);
                 std::vector<int>  direct_query(key_type key,int i);
 
-    //LHS operator[]
+                //LHS operator[]
                 value_type& operator[](key_type key);
                 //RHS operator[]
                 const value_type operator[](key_type key) const  {return HTmap::query(key); }

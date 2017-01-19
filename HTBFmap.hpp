@@ -12,29 +12,26 @@ using namespace std;
 //int verbose=0;
 
 template <typename key_type, typename value_type> class HTBFmap {
-		bool        ***present_table;    //  present flag memory
-		pair<key_type,value_type>  ***table;      // entries stored in the HT
+    bool        ***present_table;    //  present flag memory
+    pair<key_type,value_type>  ***table;      // entries stored in the HT
 
-        //CBF array[cbf_size][K]
-        CBF<key_type>** cbf_array;
-        int cbf_size;
-
-
-
-        int m;                         // size of a table
-		int b;     	               // number of slots in a bucket
-		int K;     	               // number of way
-		int num_item;                  // number of inserted item
-		int tmax;
-		bool victim_flag;
-		key_type victim_key;
-		value_type victim_value;
+    //CBF array[cbf_size][K]
+    CBF<key_type>** cbf_array;
+    int cbf_size;
+    int m;                     // size of a table
+    int b;     	               // number of slots in a bucket
+    int K;     	               // number of way
+    int num_item;              // number of inserted item
+    int tmax;
+    bool victim_flag;
+    key_type victim_key;
+    value_type victim_value;
 
         public:
                 //HTBFmap();
                 //HTBFmap(int way, int buckets, int hsize);
                 HTBFmap(int way, int buckets, int hsize,int t, int bf_size);
-                virtual ~HTBFmap();
+                ~HTBFmap();
                 void clear();
                 //void expand();
                 bool insert(key_type key,value_type value);
@@ -122,6 +119,7 @@ HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t, int
   for (int i = 0;  i <K;  i++) {
       cbf_array[i] = new CBF<key_type>[bf_size];
       for (int ii = 0;  ii <bf_size;  ii++) {
+          //cbf_array[i][ii].setsize(4,4096);
           cbf_array[i][ii].setsize(4,32);
       }
   }
@@ -365,7 +363,7 @@ vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type val
 
         //rimuovi new_key dal CBF j
         int z=myhash<key_type>(new_key,100,cbf_size);
-        cbf_array[j][z].insert(new_key);
+        cbf_array[j][z].erase(new_key);
 
         //inserisci key in CBF j
         z=myhash<key_type>(key,100,cbf_size);

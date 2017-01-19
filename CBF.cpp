@@ -78,7 +78,7 @@ void CBF<key_type>::setsize(int h, int m)
 template <typename key_type>
 CBF<key_type>::~CBF()
 {
-	delete[] mem;
+        delete[] mem;
 }
 
 

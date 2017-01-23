@@ -123,7 +123,6 @@ HTBFmap<key_type,value_type>::HTBFmap(int way, int buckets, int hsize,int t, int
           cbf_array[i][ii].setsize(4,32);
       }
   }
-  printf("ciao\n");
   clear();
 }
 
@@ -228,7 +227,7 @@ bool HTBFmap<key_type,value_type>::insert(key_type key,value_type value)
                     
         //rimuovi new_key dal CBF j
         int z=myhash<key_type>(new_key,100,cbf_size);
-        cbf_array[j][z].insert(new_key);
+        cbf_array[j][z].erase(new_key);
 
         //inserisci key in CBF j
         z=myhash<key_type>(key,100,cbf_size);
@@ -239,6 +238,7 @@ bool HTBFmap<key_type,value_type>::insert(key_type key,value_type value)
         value=new_value;
     }
     verprintf("insertion failed\n");
+    printf("HTBFmap:: insertion failed\n");
     //if (verbose==1) cout << "key:<" << key.first <<","<< key.second <<">" <<endl;
     //if (verbose==1) cout << "value: " << value <<endl;
 
@@ -312,7 +312,12 @@ vector<int> HTBFmap<key_type,value_type>::fullinsert(key_type key,value_type val
         v.push_back(0); 
         return v;
     }
-    for (int i = 0;  i <K;  i++){
+    int z=myhash<key_type>(key,100,cbf_size);
+    for (int i = 0;  i <K;  i++) {
+        //se CBF(key) == 0 continue
+        if (cbf_array[i][z].check(key)==0) {
+            continue;
+        }
         int p = myhash<key_type>(key,i,m);
         num_lookup++;
         for (int ii = 0;  ii <b;  ii++)

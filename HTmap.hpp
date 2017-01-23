@@ -356,11 +356,6 @@ bool HTmap<key_type,value_type>::insert(key_type key,value_type value)
             }
     }
 
-    // check if we need to grow the map
-    //if(90*HTmap<key_type,value_type>::get_size()<100*HTmap<key_type,value_type>::get_nitem()) {
-    //    HTmap<key_type,value_type>::expand();
-    //}
-
     // try cuckoo
     for (int t = 0;  t <= tmax;  t++) {
 

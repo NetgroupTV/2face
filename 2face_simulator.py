@@ -19,7 +19,8 @@ cache_hash_idx = 100
 # A: cuckoo_4_2
 # B: cache + cuckoo_4_2 
 # C: CBF + cuckoo_4_2
-# D: 2face
+# D: cache + CBF + cuckoo_4_2
+# E: 2face
 
 
 class Cache:
@@ -75,11 +76,13 @@ class memA:
             self.memory_read_count += ret[4]
             return new_val
         else:
-            self.memory_read_count +=self.number_of_hash_tables 
+            #self.memory_read_count +=self.number_of_hash_tables 
             ret = self.HT.fullinsert(key, 1)
             if (ret[4]==1000):
                 print 'HT full!!!'
             self.memory_access_count += ret[4]
+            #print 'memA:', self.memory_access_count
+            #print 'memA:', self.memory_read_count
             return 1
 
     def clear(self):
@@ -90,7 +93,7 @@ class memA:
         print "Number of items in HT: " + str(self.HT.get_nitem())
         print "HT size: " + str(self.HT.get_size())
         print "Number of memory accesses: " + str(self.memory_access_count)
-        print "Number of read memory accesses: " + str(self.memory_read_count)
+        #print "Number of read memory accesses: " + str(self.memory_read_count)
 
 class memB:
     def __init__(self, ht_size, cache_size, number_of_hash_tables):
@@ -115,7 +118,8 @@ class memB:
                 self.cache.insert(key, new_val)
                 return new_val 
             else:
-                self.memory_read_count +=self.number_of_hash_tables 
+                ret = self.HT.fullquery(key)
+                self.memory_read_count += ret[4]
                 self.cache.insert(key, 1)
                 return 1
 
@@ -153,40 +157,40 @@ class memB:
         print "Number of items in HT: " + str(self.HT.get_nitem())
         print "HT size: " + str(self.HT.get_size())
         print "Number of memory accesses: " + str(self.memory_access_count)
-        print "Number of read memory accesses: " + str(self.memory_read_count)
-        print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
+        #print "Number of read memory accesses: " + str(self.memory_read_count)
+        #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
-class BFarray:
-    def __init__(self, bf_size, number_of_hash_tables):
-        self.mem = []
-        self.read_count = 0
-        self.write_count = 0
-        self.bf_size = bf_size
-        self.number_of_hash_tables = number_of_hash_tables
-
-        for j in range(bf_size):
-            row = []
-            for i in range(number_of_hash_tables):
-                obj = cbf.CBFstring(4, 32)
-                row.append(obj)
-            self.mem.append(row)
-
-    def query(self, key):
-        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
-        row = self.mem[h]
-        res = []
-        for i in range(self.number_of_hash_tables):
-            self.read_count += 1
-            bf_obj = row[i]
-            res.append(bf_obj.check(key))
-
-        return res
-
-    def insert(self, key, idx):
-        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
-        row = self.mem[h]
-        self.write_count += 1
-        row[idx].insert(key)
+#class BFarray:
+#    def __init__(self, bf_size, number_of_hash_tables):
+#        self.mem = []
+#        self.read_count = 0
+#        self.write_count = 0
+#        self.bf_size = bf_size
+#        self.number_of_hash_tables = number_of_hash_tables
+#
+#        for j in range(bf_size):
+#            row = []
+#            for i in range(number_of_hash_tables):
+#                obj = cbf.CBFstring(4, 32)
+#                row.append(obj)
+#            self.mem.append(row)
+#
+#    def query(self, key):
+#        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
+#        row = self.mem[h]
+#        res = []
+#        for i in range(self.number_of_hash_tables):
+#            self.read_count += 1
+#            bf_obj = row[i]
+#            res.append(bf_obj.check(key))
+#
+#        return res
+#
+#    def insert(self, key, idx):
+#        h = HTmap.myhashstring(key, cache_hash_idx, self.bf_size)
+#        row = self.mem[h]
+#        self.write_count += 1
+#        row[idx].insert(key)
 
 
 class memC:
@@ -212,12 +216,14 @@ class memC:
         else:
             #count read access not pruned by BFs
             ret = self.HT.fullquery(key)
-            self.memory_read_count += ret[4]
+            #self.memory_read_count += ret[4]
             
             ret = self.HT.fullinsert(key, 1)
             if (ret[4]==1000):
                 print 'HT full!!!'
             self.memory_access_count += ret[4]
+            #print 'memC:', self.memory_access_count
+            #print 'memC:', self.memory_read_count
             return 1
 
     #def count(self, key):
@@ -255,13 +261,94 @@ class memC:
     def mem_report(self):
         #print "Number of items in HT: " + str(self.HTBF.get_nitem())
         print "Number of memory accesses: " + str(self.memory_access_count)
-        print "Number of read memory accesses: " + str(self.memory_read_count)
-#print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
+        #print "Number of read memory accesses: " + str(self.memory_read_count)
+        #print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
+
+
+class memD:
+    def __init__(self, ht_size, cache_size, number_of_hash_tables):
+        self.memory_access_count = 0
+        self.memory_read_count = 0
+        self.number_of_hash_tables=number_of_hash_tables
+        my_bf_size=(10*cache_size)/100
+        self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,my_bf_size)
+        my_cache_size=(90*cache_size)/100
+        self.cache = Cache(my_cache_size) 
+        self.HT.clear()
+
+    def count(self, key):
+        #check if key in cache
+        cache_ret = self.cache.query(key)
+        
+        if cache_ret[0] == "miss":
+            #check if key in HT
+            if self.HT.count(key):
+                ret = self.HT.fullquery(key)
+                self.memory_access_count += ret[4]
+                self.memory_read_count += ret[4]
+                new_val = ret[0]+1
+                self.cache.insert(key, new_val)
+                return new_val 
+            else:
+                #count read access not pruned by BFs
+                ret = self.HT.fullquery(key)
+                self.memory_read_count += ret[4]
+                self.cache.insert(key, 1)
+                return 1
+
+        elif cache_ret[0] == "conflict":
+            #insert old cache element in HT
+            ret2 = self.HT.fullinsert(cache_ret[1], cache_ret[2])
+            if (ret2[4]==1000):
+                print 'HT full!!!'
+            self.memory_access_count += ret2[4]
+
+            #check if key in HT
+            if self.HT.count(key):
+                #YES -> move new element in cache
+                ht_ret = self.HT.fullquery(key)
+                self.memory_access_count += ht_ret[4]
+                self.memory_read_count += ht_ret[4]
+                new_val = ht_ret[0]+1
+                self.cache.insert(key, new_val)
+                return new_val
+            else:
+                #NO -> insert (key, 1) in cache
+                self.cache.insert(key, 1)
+                return 1
+        
+        else: #cache hit
+            new_val = cache_ret[2]+1
+            self.cache.insert(key, new_val)
+            return new_val
+
+    def clear(self):
+        self.memory_access_count = 0
+        self.HT.clear()
+
+    def mem_report(self):
+        print "Number of items in HT: " + str(self.HT.get_nitem())
+        print "HT size: " + str(self.HT.get_size())
+        print "Number of memory accesses: " + str(self.memory_access_count)
+        #print "Number of read memory accesses: " + str(self.memory_read_count)
+        #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
+
+
+
+
+
+
+
+
+
+
+
 
 input_traces = {   
 #       "test": "test.txt",
 #       "campus": "campus.5.txt"
-       "wand" : "wand.5.txt"
+       "wand" : "wand.5.txt",
+#       "wand2" : "wand.10M.5.txt",
 #       "caida": "caida.5.2.txt",
 }
 
@@ -286,6 +373,7 @@ for tname,tpath in input_traces.iteritems():
     testA = memA(ht_size, 4)
     testB = memB(ht_size, cache_size, 4)
     testC = memC(ht_size, bf_size, 4)
+    testD = memD(ht_size, cache_size, 4)
 
     while True:
         l = f.readline()
@@ -300,6 +388,7 @@ for tname,tpath in input_traces.iteritems():
         a=testA.count(k)
         b=testB.count(k)
         c=testC.count(k)
+        d=testD.count(k)
         #print b
         #print c
         if ((a!=b) or (b!=c)):
@@ -318,4 +407,7 @@ for tname,tpath in input_traces.iteritems():
 
     print "TestC report:"
     testC.mem_report() 
+    
+    print "TestD report:"
+    testD.mem_report() 
     sys.exit()

@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 
-import cbf
+#import cbf
 import HTmap
 import HTBFmap
 import sys
@@ -92,7 +92,8 @@ class memA:
     def mem_report(self):
         print "Number of items in HT: " + str(self.HT.get_nitem())
         print "HT size: " + str(self.HT.get_size())
-        print "Number of memory accesses: " + str(self.memory_access_count)
+        print "HT load factor: ",  100*self.HT.get_nitem()/self.HT.get_size(), "%"
+        print "memA: Number of memory accesses: " + str(self.memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
 
 class memB:
@@ -266,13 +267,13 @@ class memC:
 
 
 class memD:
-    def __init__(self, ht_size, cache_size, number_of_hash_tables):
+    def __init__(self, ht_size, cache_size, number_of_hash_tables,ratio):
         self.memory_access_count = 0
         self.memory_read_count = 0
         self.number_of_hash_tables=number_of_hash_tables
-        my_bf_size=(10*cache_size)/100
+        my_bf_size=((100-ratio)*cache_size)/100
         self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,my_bf_size)
-        my_cache_size=(90*cache_size)/100
+        my_cache_size=(ratio*cache_size)/100
         self.cache = Cache(my_cache_size) 
         self.HT.clear()
 
@@ -327,38 +328,31 @@ class memD:
         self.HT.clear()
 
     def mem_report(self):
-        print "Number of items in HT: " + str(self.HT.get_nitem())
-        print "HT size: " + str(self.HT.get_size())
-        print "Number of memory accesses: " + str(self.memory_access_count)
+        #print "Number of items in HT: " + str(self.HT.get_nitem())
+        #print "HT size: " + str(self.HT.get_size())
+        print "memD ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
 
 
 
-
-
-
-
-
-
-
-
 input_traces = {   
 #       "test": "test.txt",
-#       "campus": "campus.5.txt"
-       "wand" : "wand.5.txt",
+    "campus": "campus.5.txt"
+#       "wand" : "wand.5.txt",
 #       "wand2" : "wand.10M.5.txt",
 #       "caida": "caida.5.2.txt",
 }
 
 
-if len(sys.argv) != 3:
-    print "usage: 2face_simulator.py <cache_size> <ht_size>"
+if len(sys.argv) != 4:
+    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio>"
     sys.exit()
 
 cache_size = int(sys.argv[1])
 ht_size = int(sys.argv[2])
+ratio = int(sys.argv[3])
 
 #BF_SIZE = CACHE_SIZE
 bf_size = cache_size
@@ -371,9 +365,9 @@ for tname,tpath in input_traces.iteritems():
     num_of_packets = 0
 
     testA = memA(ht_size, 4)
-    testB = memB(ht_size, cache_size, 4)
-    testC = memC(ht_size, bf_size, 4)
-    testD = memD(ht_size, cache_size, 4)
+    #testB = memB(ht_size, cache_size, 4)
+    #testC = memC(ht_size, bf_size, 4)
+    testD = memD(ht_size, cache_size, 4, ratio)
 
     while True:
         l = f.readline()
@@ -386,28 +380,32 @@ for tname,tpath in input_traces.iteritems():
         #print k 
         #print 
         a=testA.count(k)
-        b=testB.count(k)
-        c=testC.count(k)
+        #b=testB.count(k)
+        #c=testC.count(k)
         d=testD.count(k)
         #print b
         #print c
-        if ((a!=b) or (b!=c)):
+        if (a!=d):
             print "ERROR"
             print "HT size is", testC.HT.get_size()
             print "items in HT:", testC.HT.get_nitem()
             sys.exit()
 
+    print "--------------------------"
     print "Trace " + tname
     print "Number of packets " + str(num_of_packets)
+    print "cache ratio is:", 100*cache_size/testA.HT.get_size(), "%" 
     print "TestA report:"
     testA.mem_report()
 
-    print "TestB report:"
-    testB.mem_report() 
+    #print "TestB report:"
+    #testB.mem_report() 
 
-    print "TestC report:"
-    testC.mem_report() 
+    #print "TestC report:"
+    #testC.mem_report() 
     
     print "TestD report:"
     testD.mem_report() 
-    sys.exit()
+    print "--------------------------"
+sys.exit()
+

@@ -142,7 +142,7 @@ HTBFmap<key_type,value_type>::~HTBFmap()
     }
     delete[] present_table;
     delete[] table;
-
+/*
   // dealloca il CBF array
     for (int i = 0;  i <K;  i++) {
         for (int ii = 0;  i <cbf_size;  ii++) {
@@ -151,6 +151,7 @@ HTBFmap<key_type,value_type>::~HTBFmap()
         delete[] cbf_array[i];
     }
     delete[] cbf_array;
+*/
 }
 
 

@@ -254,6 +254,12 @@ class memC:
             #print 'memC:', self.memory_read_count
             return 1
 
+    def load_static_db(self):
+        return
+
+    def query_static_db(self):
+        return
+
     #def count(self, key):
     #    #compute hash(key)
 
@@ -375,8 +381,9 @@ class memD:
 
 
 if len(sys.argv) != 6:
-    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio> <trace_file> <key_type>"
-    print "where key type can be: \n1: <src_ip>\n2: <dst_ip>\n3: <src_ip, dst_ip>\n4: socket 5-tuple" 
+    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio> <trace_file> <key_type> <app_type>"
+    print "where key type can be: \n1: <src_ip>\n2: <dst_ip>\n3: <src_ip, dst_ip>\n4: 5 tuple"
+    print "where app type can be: \n0: dynamic\n100: full pre loaded\nx\%: x\% pre loaded " 
     sys.exit()
 
 cache_size = int(sys.argv[1])

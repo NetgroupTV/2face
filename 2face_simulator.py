@@ -157,7 +157,7 @@ class memB:
     def mem_report(self):
         print "Number of items in HT: " + str(self.HT.get_nitem())
         print "HT size: " + str(self.HT.get_size())
-        print "Number of memory accesses: " + str(self.memory_access_count)
+        print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
@@ -261,7 +261,8 @@ class memC:
 
     def mem_report(self):
         #print "Number of items in HT: " + str(self.HTBF.get_nitem())
-        print "Number of memory accesses: " + str(self.memory_access_count)
+        #print "Number of memory accesses: " + str(self.memory_access_count)
+        print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
@@ -330,7 +331,7 @@ class memD:
     def mem_report(self):
         #print "Number of items in HT: " + str(self.HT.get_nitem())
         #print "HT size: " + str(self.HT.get_size())
-        print "memD ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
+        print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
@@ -353,6 +354,8 @@ if len(sys.argv) != 4:
 cache_size = int(sys.argv[1])
 ht_size = int(sys.argv[2])
 ratio = int(sys.argv[3])
+print "With command line: 2face_simulator.py", sys.argv[1], sys.argv[2], sys.argv[3] 
+
 
 #BF_SIZE = CACHE_SIZE
 bf_size = cache_size
@@ -367,7 +370,13 @@ for tname,tpath in input_traces.iteritems():
     testA = memA(ht_size, 4)
     #testB = memB(ht_size, cache_size, 4)
     #testC = memC(ht_size, bf_size, 4)
-    testD = memD(ht_size, cache_size, 4, ratio)
+    
+    if (ratio==0):
+        testD = memC(ht_size,cache_size,4)
+    elif (ratio==100):
+        testD = memB(ht_size,cache_size,4)
+    else:
+        testD = memD(ht_size, cache_size, 4, ratio)
 
     while True:
         l = f.readline()
@@ -394,7 +403,7 @@ for tname,tpath in input_traces.iteritems():
     print "--------------------------"
     print "Trace " + tname
     print "Number of packets " + str(num_of_packets)
-    print "cache ratio is:", 100*cache_size/testA.HT.get_size(), "%" 
+    print "cache ratio is:", cache_size/(0.0+testA.HT.get_size()) 
     print "TestA report:"
     testA.mem_report()
 

@@ -415,10 +415,10 @@ for tname,tpath in input_traces.iteritems():
 
     while True:
         if num_of_packets % sample_period_pkts==0:
-            retA = testA.sample()
-            retD = testD.sample()
             testA.mem_report()
             testD.mem_report()
+            retA = testA.sample()
+            retD = testD.sample()
 
         l = f.readline()
         if not l:

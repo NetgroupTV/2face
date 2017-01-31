@@ -59,9 +59,17 @@ class memA:
     def __init__(self, ht_size, number_of_hash_tables):
         self.memory_access_count = 0
         self.memory_read_count = 0
+        self.tot_memory_access_count = 0
         self.number_of_hash_tables=number_of_hash_tables
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.HT.clear()
+
+    def sample(self):
+        tmp = self.memory_access_count
+        self.tot_memory_access_count += self.memory_access_count
+        self.memory_access_count = 0
+
+        return (tmp, self.tot_memory_access_count)
 
     def count(self, key):
         if self.HT.count(key):
@@ -94,16 +102,26 @@ class memA:
         print "HT size: " + str(self.HT.get_size())
         print "HT load factor: ",  100*self.HT.get_nitem()/self.HT.get_size(), "%"
         print "memA: Number of memory accesses: " + str(self.memory_access_count)
+        print "memA: Total number of memory accesses: " + str(self.tot_memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
 
 class memB:
     def __init__(self, ht_size, cache_size, number_of_hash_tables):
         self.memory_access_count = 0
         self.memory_read_count = 0
+        self.tot_memory_access_count = 0
         self.number_of_hash_tables=number_of_hash_tables
         self.HT =  HTmap.HTstring(number_of_hash_tables, 2, ht_size, 1000)
         self.cache = Cache(cache_size) 
         self.HT.clear()
+
+    def sample(self):
+        tmp = self.memory_access_count
+        self.tot_memory_access_count += self.memory_access_count
+        self.memory_access_count = 0
+
+        return (tmp, self.tot_memory_access_count)
+
 
     def count(self, key):
         #check if key in cache
@@ -158,6 +176,7 @@ class memB:
         print "Number of items in HT: " + str(self.HT.get_nitem())
         print "HT size: " + str(self.HT.get_size())
         print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
+        print "memB: Total number of memory accesses: " + str(self.tot_memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
@@ -195,14 +214,21 @@ class memB:
 
 
 class memC:
-
     def __init__(self, ht_size, bf_size, number_of_hash_tables):
         self.memory_access_count = 0
         self.memory_read_count   = 0 
+        self.tot_memory_access_count = 0
         self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,bf_size)
         #self.BFarray = BFarray(bf_size, number_of_hash_tables)
         self.HT.clear()
     
+    def sample(self):
+        tmp = self.memory_access_count
+        self.tot_memory_access_count += self.memory_access_count
+        self.memory_access_count = 0
+
+        return (tmp, self.tot_memory_access_count)
+
     def count(self, key):
         if self.HT.count(key):
             ret = self.HT.fullquery(key)
@@ -263,6 +289,7 @@ class memC:
         #print "Number of items in HT: " + str(self.HTBF.get_nitem())
         #print "Number of memory accesses: " + str(self.memory_access_count)
         print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
+        print "mem ("+str(ratio) + "%): Total number of memory accesses: " + str(self.tot_memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.BFarray.read_count, self.BFarray.write_count)
 
@@ -271,12 +298,21 @@ class memD:
     def __init__(self, ht_size, cache_size, number_of_hash_tables,ratio):
         self.memory_access_count = 0
         self.memory_read_count = 0
+        self.tot_memory_access_count = 0
         self.number_of_hash_tables=number_of_hash_tables
         my_bf_size=((100-ratio)*cache_size)/100
         self.HT =  HTBFmap.HTBFstring(number_of_hash_tables, 2, ht_size, 1000,my_bf_size)
         my_cache_size=(ratio*cache_size)/100
         self.cache = Cache(my_cache_size) 
         self.HT.clear()
+
+    def sample(self):
+        tmp = self.memory_access_count
+        self.tot_memory_access_count += self.memory_access_count
+        self.memory_access_count = 0
+
+        return (tmp, self.tot_memory_access_count)
+
 
     def count(self, key):
         #check if key in cache
@@ -332,6 +368,7 @@ class memD:
         #print "Number of items in HT: " + str(self.HT.get_nitem())
         #print "HT size: " + str(self.HT.get_size())
         print "mem ("+str(ratio) + "%): Number of memory accesses: " + str(self.memory_access_count)
+        print "mem ("+str(ratio) + "%): Total number of memory accesses: " + str(self.tot_memory_access_count)
         #print "Number of read memory accesses: " + str(self.memory_read_count)
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
@@ -354,10 +391,10 @@ if len(sys.argv) != 4:
 cache_size = int(sys.argv[1])
 ht_size = int(sys.argv[2])
 ratio = int(sys.argv[3])
+sample_period_pkts = 10000
+
 print "With command line: 2face_simulator.py", sys.argv[1], sys.argv[2], sys.argv[3] 
 
-
-#BF_SIZE = CACHE_SIZE
 bf_size = cache_size
 
 for tname,tpath in input_traces.iteritems():
@@ -368,8 +405,6 @@ for tname,tpath in input_traces.iteritems():
     num_of_packets = 0
 
     testA = memA(ht_size, 4)
-    #testB = memB(ht_size, cache_size, 4)
-    #testC = memC(ht_size, bf_size, 4)
     
     if (ratio==0):
         testD = memC(ht_size,cache_size,4)
@@ -379,6 +414,12 @@ for tname,tpath in input_traces.iteritems():
         testD = memD(ht_size, cache_size, 4, ratio)
 
     while True:
+        if num_of_packets % sample_period_pkts==0:
+            retA = testA.sample()
+            retD = testD.sample()
+            testA.mem_report()
+            testD.mem_report()
+
         l = f.readline()
         if not l:
             break
@@ -400,21 +441,15 @@ for tname,tpath in input_traces.iteritems():
             print "items in HT:", testC.HT.get_nitem()
             sys.exit()
 
-    print "--------------------------"
+    print "------------ FINE TRACCIA --------------"
     print "Trace " + tname
     print "Number of packets " + str(num_of_packets)
     print "cache ratio is:", cache_size/(0.0+testA.HT.get_size()) 
     print "TestA report:"
-    testA.mem_report()
-
-    #print "TestB report:"
-    #testB.mem_report() 
-
-    #print "TestC report:"
-    #testC.mem_report() 
-    
+    testA.mem_report() 
     print "TestD report:"
     testD.mem_report() 
-    print "--------------------------"
+    print "-----------------------------------------"
+
 sys.exit()
 

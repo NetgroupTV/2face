@@ -2,6 +2,7 @@
 
 #import cbf
 import HTmap
+import os
 import HTBFmap
 import sys
 import matplotlib
@@ -373,83 +374,88 @@ class memD:
         #print "cache read: %d write: %d"%(self.cache.read_count, self.cache.write_count)
 
 
-
-
-input_traces = {   
-#       "test": "test.txt",
-    "campus": "campus.5.txt"
-#       "wand" : "wand.5.txt",
-#       "wand2" : "wand.10M.5.txt",
-#       "caida": "caida.5.2.txt",
-}
-
-
-if len(sys.argv) != 4:
-    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio>"
+if len(sys.argv) != 6:
+    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio> <trace_file> <key_type>"
+    print "where key type can be: \n1: <src_ip>\n2: <dst_ip>\n3: <src_ip, dst_ip>\n4: socket 5-tuple" 
     sys.exit()
 
 cache_size = int(sys.argv[1])
 ht_size = int(sys.argv[2])
 ratio = int(sys.argv[3])
+trace_path = sys.argv[4] 
 sample_period_pkts = 10000
+key_type = int(sys.argv[5])
 
 print "With command line: 2face_simulator.py", sys.argv[1], sys.argv[2], sys.argv[3] 
 
 bf_size = cache_size
 
-for tname,tpath in input_traces.iteritems():
-    print "opening %s in file %s"%(tname, tpath)
-    f = open(tpath, "r")
-    packets = {}
-    count = {}
-    num_of_packets = 0
+tname = os.path.basename(trace_path).split(".")[0]
+tpath = trace_path
 
-    testA = memA(ht_size, 4)
-    
-    if (ratio==0):
-        testD = memC(ht_size,cache_size,4)
-    elif (ratio==100):
-        testD = memB(ht_size,cache_size,4)
-    else:
-        testD = memD(ht_size, cache_size, 4, ratio)
+print "opening %s in file %s"%(tname, tpath)
+f = open(tpath, "r")
+packets = {}
+count = {}
+num_of_packets = 1
 
-    while True:
-        if num_of_packets % sample_period_pkts==0:
-            testA.mem_report()
-            testD.mem_report()
-            retA = testA.sample()
-            retD = testD.sample()
+testA = memA(ht_size, 4)
 
-        l = f.readline()
-        if not l:
-            break
-        fields = l.split("\n")[0].split(" ")
+if (ratio==0):
+    testD = memC(ht_size,cache_size,4)
+elif (ratio==100):
+    testD = memB(ht_size,cache_size,4)
+else:
+    testD = memD(ht_size, cache_size, 4, ratio)
+
+while True:
+    if num_of_packets % sample_period_pkts==0:
+        testA.mem_report()
+        testD.mem_report()
+        retA = testA.sample()
+        retD = testD.sample()
+
+    l = f.readline()
+    if not l:
+        break
+    fields = l.split("\n")[0].split(" ")
+    if key_type == 1:
+        k = "%s"%(fields[1])
+    elif key_type == 2:
+        k = "%s"%(fields[2])
+    elif key_type == 3:
+        k = "%s %s"%(fields[1],fields[2])
+    elif key_type == 4:
         k ="%s %s %s %s %s"%(fields[1], fields[2], fields[3], fields[4], fields[5])
-        num_of_packets += 1
+    else:
+        print("wrong key type")
+        sys.exit(-1)
 
-        #print k 
-        #print 
-        a=testA.count(k)
-        #b=testB.count(k)
-        #c=testC.count(k)
-        d=testD.count(k)
-        #print b
-        #print c
-        if (a!=d):
-            print "ERROR"
-            print "HT size is", testC.HT.get_size()
-            print "items in HT:", testC.HT.get_nitem()
-            sys.exit()
+    num_of_packets += 1
 
-    print "------------ FINE TRACCIA --------------"
-    print "Trace " + tname
-    print "Number of packets " + str(num_of_packets)
-    print "cache ratio is:", cache_size/(0.0+testA.HT.get_size()) 
-    print "TestA report:"
-    testA.mem_report() 
-    print "TestD report:"
-    testD.mem_report() 
-    print "-----------------------------------------"
+    #print k 
+    #print 
+    a=testA.count(k)
+    #b=testB.count(k)
+    #c=testC.count(k)
+    d=testD.count(k)
+    #print b
+    #print c
+    if (a!=d):
+        print "ERROR"
+        print "HT size is", testC.HT.get_size()
+        print "items in HT:", testC.HT.get_nitem()
+        sys.exit()
+
+print "------------ FINE TRACCIA --------------"
+print "Trace " + tname
+print "Number of packets " + str(num_of_packets)
+print "cache ratio is:", cache_size/(0.0+testA.HT.get_size()) 
+print "TestA report:"
+testA.mem_report() 
+print "TestD report:"
+testD.mem_report() 
+print "-----------------------------------------"
 
 sys.exit()
 

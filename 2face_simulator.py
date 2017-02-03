@@ -416,13 +416,14 @@ class memD:
 
 
 if len(sys.argv) != 8:
-    print "usage: 2face_simulator.py <cache_size> <ht_size> <ratio> <trace_file> <key_type> <app_type> <sample_pkt_count>"
+    print "usage: 2face_simulator.py <cache_size> <ht_load> <ratio> <trace_file> <key_type> <app_type> <sample_pkt_count>"
+    print "(1) cache size if a % of the hash table size; (2) ratio between BF size and cache size in the hybrid solution"
     print "where key type can be: \n1: <src_ip>\n2: <dst_ip>\n3: <src_ip, dst_ip>\n4: 5 tuple"
     print "where app type can be: \n0: dynamic\n100: full pre loaded\nx\%: x\% pre loaded " 
     sys.exit()
 
-cache_size = int(sys.argv[1])
-ht_size = int(sys.argv[2])
+cache_size_perc= float(sys.argv[1])
+ht_load = int(sys.argv[2])
 ratio = int(sys.argv[3])
 trace_path = sys.argv[4] 
 key_type = int(sys.argv[5])
@@ -441,6 +442,13 @@ packets = {}
 count = {}
 num_of_packets = 1
 
+first_line = f.readline()
+n_list = first_line.split()
+N = n_list(key_type) 
+ht_size = (N*100) / (8 * ht_load) 
+
+cache_size = (ht_size * 8 * cache_size_percent) / 100 
+
 testA = memA(ht_size, 4)
 
 if (ratio==0):
@@ -457,7 +465,7 @@ elif app_type == 100:
     #load db
     while True:
         l = f.readline()
-        if not l:
+        if not l or l[0] == "#":
             break
         fields = l.split("\n")[0].split(" ")
         if key_type == 1:
@@ -493,6 +501,8 @@ elif app_type == 100:
 else:
     print "wrong app type"
     sys.exit(-1)
+
+
 
 print "starting app"
 f.seek(0)
